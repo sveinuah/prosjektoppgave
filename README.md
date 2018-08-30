@@ -1,0 +1,2 @@
+# prosjektoppgave
+Prosjektoppgave på NTNU. 
