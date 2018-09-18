@@ -1,13 +1,4 @@
-#include "common/common_utils/StrictMode.hpp"
-STRICT_MODE_OFF
-#ifndef RPCLIB_MSGPACK
-#define RPCLIB_MSGPACK clmdep_msgpack
-#endif // !RPCLIB_MSGPACK
-#include "rpc/rpc_error.h"
-STRICT_MODE_ON
-
-#include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
-#include "common/common_utils/FileSystem.hpp"
+#include "apiHeader.hpp"
 #include <iostream>
 #include <chrono>
 
@@ -29,7 +20,11 @@ int main()
     	client.confirmConnection();
 
     	std::cout << "Press Enter to arm the drone" << std::endl; std::cin.get();
-        client.enableApiControl(true);
+        
+        if (!(client.enableApiControl(true))) {
+        	throw "API control disabeled condition!";
+        }
+
         client.armDisarm(true);
         std::cout << "Drone armed" << std::endl;
 
@@ -42,14 +37,46 @@ int main()
         std::this_thread::sleep_for(std::chrono::duration<double>(5));
         client.hoverAsync()->waitOnLastTask();
 
+        // Main travel loo
         std::cout << "Press enter to start movement loop" << std::endl
         std::cout << "Looping for " << LOOP_TIME << "seconds. With a velocity of " << LOOP_VELOCITY << " m/s" << std::endl
 
-               
+        auto position = client.getMultirotorState().getPosition();
+        float zPos = position.z();
+        const float speed = 3.0f;
+        const float duration = 4.0f;
+
+        DrivetrainType driveTrain = DrivetrainType::MaxDegreeOfFreedom;
+        YawMode::Zero();
+
+        client.moveByVelocityZAsync(speed, 0, z, duration, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(0, speed, z, duration, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(-speed, 0, z, duration, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(0, -speed, z, duration, driveTrain, YawMode)->waitOnLastTask();
+
+        client.moveByVelocityZAsync(0, 0, z, duration/2, driveTrain, YawMode)->waitOnLastTask();
+        
+
+        // Hover as an end of loop
+        client.hoverAsync()->waitOnLastTask();
+
+        // Landing
+        std::cout << "Press enter to land" << std::endl;
+        client.landAsync()->waitOnLastTask();
+
+        // Disarming
+        std::cout << "Press enter to disarm drone" << std::endl;
+        client.armDisarm(false);
+    }
+
+    catch (const char* e) {
+    	std::cout << *e << std::endl;
     }
 
 	catch (rpc::rpc_error&  e) {
     	std::string msg = e.get_error().as<std::string>();
     	std::cout << "Exception raised by the API, something went wrong." << std::endl << msg << std::endl;
     }
+
+    return 0;
 }
