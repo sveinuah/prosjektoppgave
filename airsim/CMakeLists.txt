@@ -159,6 +159,7 @@ include_directories(
 catkin_install_python(
 	PROGRAMS
    	scripts/drone_image_raw.py
+   	scripts/flightroutine.py
    	DESTINATION 
    	${CATKIN_PACKAGE_BIN_DESTINATION}
 )
