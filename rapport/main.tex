@@ -1,24 +1,28 @@
 %% Master Thesis Template
 %% Please update the specification through this link: https://daim.idi.ntnu.no/howto_thesis_submission.pdf
-\documentclass[pdftex,10pt,a4paper,twoside]{book}
+\documentclass[pdftex,12pt,a4paper,twoside]{book}
 \input{docsetup.tex}
-
+\input{symbols.tex}
 \begin{document}
 
 %% PART 1
 %%The title page will be automatically generated and added by the DAIM system
-\input{dedication.tex}		%% Optional
 
 %% PART 2
-\input{summary.tex}		%% Optional
-\input{preface.tex}		%% Optional
-\input{list.tex}			%% Generate TOC, list of tables, and list of figures automatically
-%\input{abbreviations.tex}	%% Optional
+\input{summary.tex}
+\input{preface.tex}
 
+\tableofcontents
+\addcontentsline{toc}{chapter}{Table of Contents}
+\clearpage
+\printunsrtglossary[type=symbols,style=long,title={List of Symbols}]
+\clearpage
+
+\input{abbreviations.tex}
 %% PART 3 -- The Chapters
 \pagenumbering{arabic} 				
 \setcounter{page}{1}
-\input{chapter1.tex}		%% Edit each chapter
+\input{chapter1.tex}
 \input{chapter2.tex}
 \input{chapter3.tex}
 \input{chapter4.tex}

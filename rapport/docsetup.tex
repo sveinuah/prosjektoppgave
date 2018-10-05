@@ -1,15 +1,21 @@
 \usepackage[lmargin=25mm,rmargin=25mm,tmargin=27mm,bmargin=30mm]{geometry}
+\usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[english]{babel}
 
 \usepackage{setspace}
+\usepackage{subfig}
 \usepackage{graphicx}
 \graphicspath{{rapport/fig/}}
+
 \usepackage{amssymb}
 \usepackage{mathrsfs}
 \usepackage{amsthm}
 \usepackage{amsmath}
 \usepackage{color}
-%\usepackage[Lenny]{fncychap}
+
+\usepackage[symbols,nogroupskip]{glossaries-extra}
+
 \usepackage[pdftex,bookmarks=true]{hyperref}
 \usepackage[pdftex]{hyperref}
 \hypersetup{
@@ -25,7 +31,6 @@
 \usepackage{color}
 \definecolor{gray75}{gray}{0.75}
 \newcommand{\hsp}{\hspace{20pt}}
-
 \titleformat{\chapter}[hang]{\Huge\bfseries}{\thechapter\hsp\textcolor{gray75}{|}\hsp}{0pt}{\Huge\bfseries}
 
 \usepackage[font=small,labelfont=bf]{caption}
@@ -33,7 +38,6 @@
 
 \usepackage{natbib}
 \usepackage{float}
-%\floatstyle{boxed} 
 \restylefloat{figure}
 
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
