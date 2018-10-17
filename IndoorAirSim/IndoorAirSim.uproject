@@ -1,0 +1,28 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "4.18",
+	"Category": "Samples",
+	"Description": "Testing out AirSim in an indoor environment.",
+	"Modules": [
+		{
+			"Name": "IndoorAirSim",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+        "Engine",
+        "AirSim"
+			]
+		}
+	],
+  "TargetPlatforms": [
+    "MacNoEditor",
+    "WindowsNoEditor"
+  ],
+  "Plugins": [
+    {
+      "Name": "AirSim",
+      "Enabled":  true
+    }
+  ],
+	"EpicSampleNameHash": "2438045989"
+}
