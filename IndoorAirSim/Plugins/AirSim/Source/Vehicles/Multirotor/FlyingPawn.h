@@ -45,6 +45,8 @@ private: //variables
     UPROPERTY() APIPCamera* camera_front_center_;
     UPROPERTY() APIPCamera* camera_back_center_;
     UPROPERTY() APIPCamera* camera_bottom_center_;
+	UPROPERTY() APIPCamera* camera_right_center_;
+	UPROPERTY() APIPCamera* camera_left_center_;
 
     UPROPERTY() URotatingMovementComponent* rotating_movements_[rotor_count];
 

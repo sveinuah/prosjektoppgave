@@ -31,6 +31,10 @@ void AFlyingPawn::initializeForBeginPlay()
         (UAirBlueprintLib::GetActorComponent<UChildActorComponent>(this, TEXT("BackCenterCamera")))->GetChildActor());
     camera_bottom_center_ = Cast<APIPCamera>(
         (UAirBlueprintLib::GetActorComponent<UChildActorComponent>(this, TEXT("BottomCenterCamera")))->GetChildActor());
+	camera_right_center_ = Cast<APIPCamera>(
+		(UAirBlueprintLib::GetActorComponent<UChildActorComponent>(this, TEXT("RightCenterCamera")))->GetChildActor());
+	camera_left_center_ = Cast<APIPCamera>(
+		(UAirBlueprintLib::GetActorComponent<UChildActorComponent>(this, TEXT("LeftCenterCamera")))->GetChildActor());
 }
 
 void AFlyingPawn::Tick(float DeltaSeconds)
@@ -47,6 +51,8 @@ void AFlyingPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
     camera_front_center_ = nullptr;
     camera_back_center_ = nullptr;
     camera_bottom_center_ = nullptr;
+	camera_right_center_ = nullptr;
+	camera_left_center_ = nullptr;
 
     Super::EndPlay(EndPlayReason);
 }
@@ -59,12 +65,16 @@ const common_utils::UniqueValueMap<std::string, APIPCamera*> AFlyingPawn::getCam
     cameras.insert_or_assign("front_left", camera_front_left_);
     cameras.insert_or_assign("bottom_center", camera_bottom_center_);
     cameras.insert_or_assign("back_center", camera_back_center_);
+	cameras.insert_or_assign("right_center", camera_right_center_);
+	cameras.insert_or_assign("left_center", camera_left_center_);
 
     cameras.insert_or_assign("0", camera_front_center_);
     cameras.insert_or_assign("1", camera_front_right_);
     cameras.insert_or_assign("2", camera_front_left_);
     cameras.insert_or_assign("3", camera_bottom_center_);
     cameras.insert_or_assign("4", camera_back_center_);
+	cameras.insert_or_assign("5", camera_right_center_);
+	cameras.insert_or_assign("6", camera_left_center_);
 
     cameras.insert_or_assign("", camera_front_center_);
     cameras.insert_or_assign("fpv", camera_front_center_);
