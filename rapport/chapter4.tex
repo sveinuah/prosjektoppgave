@@ -1,0 +1,48 @@
+%===================================== CHAP 4 =================================
+
+\chapter{Implementation in Unreal Engine 4 with AirSim}
+
+\section{Structuring 360 degree data}
+360 degree picture data representations are highly based on the type of camera used to cature it: A fisheye lense will make a circle in the rectangular matrix representation, causeing a lot of black "dead" spots with no information. The same type of representation is gained from using a Catadioptric lens. However this also removes the middle of the picture, because of the way it is constructed.
+
+Another way to represent a picture is by a unit-sphere coordiante system. Using a $\phi$~-~$\theta$ map, instead of pixels. This $\phi$~-~$\theta$ representation usually maps to a pixel on a cube or stitched image, assuming the different cameras have a common focal point. You can also go directly from a pinhole, fisheye, catadioptric or some other representation to a sphere representation. This will just cause non-captured parts to be black.
+
+Low level structure comes down to a list, matrix, struct or class of some sort, maybe with compressing. Accessing and iterating over these structures however can be done in different ways: 
+
+\subsection{Fisheye and Catadioptric representation}
+This method of structuring uses the maps the catured image directly to a rectangular data structure; eg. matrix. The representation is directly coupled to pixels, rather than angles and distances. To get this information, we have to recreate it from a camera model.
+
+\textbf{Pros:}
+\begin{itemize}
+    \item Easy to implement
+    \item Easy to iterate over
+\end{itemize}
+
+\textbf{Cons:}
+\begin{itemize}
+    \item Harder to visualize for humans. 
+    \item Need extra functions to get real world positions
+    \item Pixels gets mashed or streched, potentially removing information from the picture.
+\end{itemize}
+
+\subsection{Unit sphere representation}
+The low level implementation of this method is still a matrix-like data structure. However, the indexes of the matrix is now the spherical angles $\phi$ and $\theta$. This causes each matrix value to represent a color value in a specific direction from the center point.
+
+\textbf{Pros:}
+\begin{itemize}
+    \item Easier for humans to visualize if a 3D-sphere picture is produced.
+    \item Easy to iterate over
+    \item Depending on the cameras used to make this representation, you may preserve more picture details.
+    \item Easiest implementation for image stitching
+    \item Real world coordinates directly represented in data array indices. 
+\end{itemize}
+
+\textbf{Cons:}
+\begin{itemize}
+    \item Need extra post-processing of image data. 
+    \item Distortions will be stretched out and amplified, if you convert from fisheye or catadioptric.
+\end{itemize}
+
+\subsection{Etended Unit sphere representation}
+By defining a class containing a storage data structure, and functions for accessing it. Main goal of the representation is to "remove" edges of the picture, since the edge wraps around to the other side like a sphere.
+

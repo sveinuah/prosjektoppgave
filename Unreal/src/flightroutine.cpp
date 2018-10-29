@@ -38,8 +38,8 @@ int main()
         client.hoverAsync()->waitOnLastTask();
 
         // Main travel loo
-        std::cout << "Press enter to start movement loop" << std::endl
-        std::cout << "Looping for " << LOOP_TIME << "seconds. With a velocity of " << LOOP_VELOCITY << " m/s" << std::endl
+        std::cout << "Press enter to start movement loop" << std::endl;
+        std::cout << "Looping for " << LOOP_TIME << "seconds. With a velocity of " << LOOP_VELOCITY << " m/s" << std::endl;
 
         auto position = client.getMultirotorState().getPosition();
         float zPos = position.z();
@@ -49,12 +49,12 @@ int main()
         DrivetrainType driveTrain = DrivetrainType::MaxDegreeOfFreedom;
         YawMode::Zero();
 
-        client.moveByVelocityZAsync(speed, 0, z, duration, driveTrain, YawMode)->waitOnLastTask();
-        client.moveByVelocityZAsync(0, speed, z, duration, driveTrain, YawMode)->waitOnLastTask();
-        client.moveByVelocityZAsync(-speed, 0, z, duration, driveTrain, YawMode)->waitOnLastTask();
-        client.moveByVelocityZAsync(0, -speed, z, duration, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(speed, 0, zPos, duration, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(0, speed, zPos, duration, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(-speed, 0, zPos, duration, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(0, -speed, zPos, duration, driveTrain, YawMode)->waitOnLastTask();
 
-        client.moveByVelocityZAsync(0, 0, z, duration/2, driveTrain, YawMode)->waitOnLastTask();
+        client.moveByVelocityZAsync(0, 0, zPos, duration/2, driveTrain, YawMode)->waitOnLastTask();
         
 
         // Hover as an end of loop

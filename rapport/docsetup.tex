@@ -1,0 +1,56 @@
+\usepackage[lmargin=25mm,rmargin=25mm,tmargin=27mm,bmargin=30mm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+\setlength\parindent{0pt}
+\setlength{\parskip}{1em}
+
+\usepackage{setspace}
+\usepackage{subfig}
+\usepackage{graphicx}
+\graphicspath{{rapport/fig/}}
+
+\usepackage{amssymb}
+\usepackage{mathrsfs}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{color}
+
+\usepackage[symbols,nogroupskip]{glossaries-extra}
+
+\usepackage[pdftex,bookmarks=true]{hyperref}
+\usepackage[pdftex]{hyperref}
+\hypersetup{
+    colorlinks,%
+    citecolor=black,%
+    filecolor=black,%
+    linkcolor=black,%
+    urlcolor=black
+}
+
+\usepackage{titlesec}
+\usepackage{blindtext}
+\usepackage{color}
+\definecolor{gray75}{gray}{0.75}
+\newcommand{\hsp}{\hspace{20pt}}
+\titleformat{\chapter}[hang]{\Huge\bfseries}{\thechapter\hsp\textcolor{gray75}{|}\hsp}{0pt}{\Huge\bfseries}
+
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{fancyhdr}
+
+\usepackage{natbib}
+\usepackage{float}
+\restylefloat{figure}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+\renewcommand*\contentsname{Table of Contents}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{\chaptername\ \thechapter.\ #1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\renewcommand{\headrulewidth}{0.1ex}
+\renewcommand{\footrulewidth}{0.1ex}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[LE,RO]{\thepage}\renewcommand{\headrulewidth}{0ex}}
