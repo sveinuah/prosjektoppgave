@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+"""
+Flight routine for Unreal Engine 4, with Airsim over ROS.
+"""
 # AirSim Python API
-import setup_path 
 import airsim
 
 import rospy
@@ -45,9 +47,9 @@ def flight():
 	rospy.loginfo("Shutting down")
 
 if __name__ == '__main__':
-    try:
-    	initializeNode(nodeName)
-    	waitForStartSignal()
-        flight()
-    except rospy.ROSInterruptException:
-    	pass
+	try:
+		initializeNode(nodeName)
+		waitForStartSignal()
+		flight()
+	except rospy.ROSInterruptException:
+		pass
