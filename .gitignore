@@ -519,3 +519,7 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Sublime text projects
+*.sublime-project
+*.sublime-workspace
