@@ -9,7 +9,7 @@ SetupConsoleBuild()
 
 include_directories(
 	${FISHEYECAPTURE_ROOT}/AirLib/deps/eigen3
-	${FISHEYECAPTURE_ROOT}/FisheyeCaptureClient/src
+	${FISHEYECAPTURE_ROOT}/FisheyeCaptureClient/include
 	${FISHEYECAPTURE_ROOT}/AirLib/include
 	${RPC_LIB_INCLUDES}
 )
