@@ -36,13 +36,11 @@ int main()
 
 	vector<ImageRequest> requests;
 	vector<ProjectionMatrix> camera_matrices;
-	for (i = 0; i < NUM_CAMERAS; i++)
+	for (int i = 0; i < NUM_CAMERAS; i++)
 	{
 		requests.push_back(ImageRequest(camera_list[i], ImageType::Scene));
 		camera_matrices.push_back(CameraInfo().proj_mat);
 	};
-	requests = const_cast<const vector<ImageRequest>>(requests);
-	camera_matrices = const_cast<const vector<ProjectionMatrix>>(camera_matrices);
 
 	std::string folder_path;
 	std::cout << "Type in the path to the folders you want to save the images in" << std::endl; std::getline(std::cin, folder_path);
@@ -53,17 +51,17 @@ int main()
 		std::cout << "Press enter to arm the drone and take off" << std::endl; std::cin.get();
 		client.enableApiControl(true);
 		client.armDisarm(true);
-		client.takeOffAsync()->waitOnLastTask();
+		client.takeoffAsync()->waitOnLastTask();
 		client.hoverAsync()->waitOnLastTask();
 
 		const vector<ImageResponse>& responses = client.simGetImages(requests);
 
 		for (int i = 0; i < NUM_CAMERAS; i++)
 		{
-			camera_info[i] = simGetCameraInfo(camera_list[i]); //TODO: Add vehicle name as second argument
+			camera_matrices[i] = (client.simGetCameraInfo(camera_list[i])).proj_mat; //TODO: Add vehicle name as second argument
 		}
 
-		for (ImageResponse& response : responses)
+		for (const ImageResponse& response : responses)
 		{
 			if (folder_path != "")
 			{
