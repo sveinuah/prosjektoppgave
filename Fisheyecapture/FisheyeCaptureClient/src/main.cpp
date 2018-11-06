@@ -6,8 +6,10 @@ STRICT_MODE_OFF
 #include "rpc/rpc_error.h"
 STRICT_MODE_ON
 
+#include "fisheyetransformer.hpp"
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 #include "common/common_utils/FileSystem.hpp"
+
 #include <iostream>
 #include <string>
 
@@ -54,6 +56,7 @@ int main()
 		client.takeoffAsync()->waitOnLastTask();
 		client.hoverAsync()->waitOnLastTask();
 
+		std::cout << "Getting images" <<  std::endl;
 		const vector<ImageResponse>& responses = client.simGetImages(requests);
 
 		for (int i = 0; i < NUM_CAMERAS; i++)
@@ -66,11 +69,16 @@ int main()
 			if (folder_path != "")
 			{
 				std::string file_path = FileSystem::combine(folder_path, response.camera_name + "_" + std::to_string(response.time_stamp));
+				std::cout << file_path << std::endl;
 				std::ofstream file(file_path + ".png", std::ios::binary);
 				file.write(reinterpret_cast<const char*>(response.image_data_uint8.data()), response.image_data_uint8.size());
 				file.close();
 			}
 		}
+
+		client.landAsync()->waitOnLastTask();
+		client.armDisarm(false);
+		client.enableApiControl(false);
 
 	}
 
