@@ -15,15 +15,28 @@ STRICT_MODE_ON
 
 #define NUM_CAMERAS 7
 
+typedef msr::airlib::ImageCaptureBase::ImageRequest ImageRequest;
+typedef msr::airlib::ImageCaptureBase::ImageResponse ImageResponse;
+typedef msr::airlib::ImageCaptureBase::ImageType ImageType;
+typedef common_utils::FileSystem FileSystem;
+
+fisheye::ProjectionMatrix projectionMatrixAdaptor(const msr::airlib::ProjectionMatrix& proj_mat)
+{
+	fisheye::ProjectionMatrix mat;
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = 0; j < 4; j++)
+		{
+			mat(i,j) = proj_mat.matrix[i][j];
+		}
+	}
+	return mat;
+}
+
 int main()
 {
-	using namespace msr::airlib;
-	typedef ImageCaptureBase::ImageRequest ImageRequest;
-	typedef ImageCaptureBase::ImageResponse ImageResponse;
-	typedef ImageCaptureBase::ImageType ImageType;
-	typedef common_utils::FileSystem FileSystem;
 
-	MultirotorRpcLibClient client;
+	msr::airlib::MultirotorRpcLibClient client;
 
 	const std::string camera_list[NUM_CAMERAS] = 
 	{
@@ -36,12 +49,12 @@ int main()
 		"bottom_center"
 	};
 
-	vector<ImageRequest> requests;
-	vector<ProjectionMatrix> camera_matrices;
+	std::vector<ImageRequest> requests;
+	std::vector<fisheye::ProjectionMatrix> camera_matrices;
 	for (int i = 0; i < NUM_CAMERAS; i++)
 	{
 		requests.push_back(ImageRequest(camera_list[i], ImageType::Scene));
-		camera_matrices.push_back(CameraInfo().proj_mat);
+		camera_matrices.push_back(fisheye::ProjectionMatrix());
 	};
 
 	std::string folder_path;
@@ -61,7 +74,8 @@ int main()
 
 		for (int i = 0; i < NUM_CAMERAS; i++)
 		{
-			camera_matrices[i] = (client.simGetCameraInfo(camera_list[i])).proj_mat; //TODO: Add vehicle name as second argument
+			camera_matrices[i] = projectionMatrixAdaptor(client.simGetCameraInfo(camera_list[i]).proj_mat); //TODO: Add vehicle name as second argument
+			std::cout << camera_matrices[i] << std::endl << std::endl;
 		}
 
 		for (const ImageResponse& response : responses)

@@ -4,32 +4,38 @@
 #include <vector>
 #include <cstdint>
 
-#include "Eigen/Dense"
+#include "common/VectorMath.hpp"
 
-typedef Eigen::Quaternion<double> Quarterniond;
-typedef Eigen::Matrix<double, 3, 4> Matrix3x4d;
-typedef Eigen::Vector3d Vector3d;
-typedef Eigen::Vector2d Vector2d;
+	typedef msr::airlib::VectorMathf VectorMath;
+	typedef VectorMath::Pose Pose;
+
+namespace fisheye {
+
+	typedef Eigen::Matrix<float, 4, 4> ProjectionMatrix;
+	typedef Eigen::Matrix<float, 3, 4> Matrix34f;
+	typedef Eigen::Matrix<float, 2, 1, Eigen::DontAlign> Vector2f;
 
 class FisheyeTransformer {
+
 public:
-	FisheyeTransformer(Matrix3x4d mat);
+	FisheyeTransformer(const ProjectionMatrix& mat);
 	~FisheyeTransformer();
 
-	void setCaptureMatrix(Matrix3x4d mat);
-	void setFisheyeMatrix(Matrix3x4d mat);
-	Matrix3x4d getCaptureMatrix();
-	Matrix3x4d getFisheyeMatrix();
+	void setCaptureMatrix(ProjectionMatrix mat);
+	void setFisheyeMatrix(Matrix34f mat);
+	ProjectionMatrix getCaptureMatrix();
+	Matrix34f getFisheyeMatrix();
 
-	void transform(Quarterniond orientation, Vector3d position, std::vector<uint8_t>& image_data_uint8, std::vector<uint8_t>& target_image_uint8);
+	void transform(Pose pose, std::vector<uint8_t>& image_data_uint8, std::vector<uint8_t>& target_image_uint8);
 
 private:
-	Matrix3x4d capture_matrix_;
-	Matrix3x4d fisheye_matrix_;
+	ProjectionMatrix capture_matrix_;
+	Matrix34f fisheye_matrix_;
 
-	Vector2d getCaptureWorldDirection(Quarterniond orientation, Vector3d position, unsigned int u, unsigned int v);
-	Vector2d getFisheyeImagePixels(double phi, double theta);
+	Vector2f getCaptureWorldDirection(Pose pose, unsigned int u, unsigned int v);
+	Vector2f getFisheyeImagePixels(float phi, float theta);
 
 };
+} //namespace fisheye end
 
 #endif /* FISHEYE_TRANSFORM */

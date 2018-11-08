@@ -2,7 +2,9 @@
 
 #include <iostream>
 
-FisheyeTransformer::FisheyeTransformer(Matrix3x4d mat)
+namespace fisheye {
+
+FisheyeTransformer::FisheyeTransformer(const ProjectionMatrix& mat)
 {
 	capture_matrix_ = mat;
 	fisheye_matrix_ << 	0, 0, 0, 0,
@@ -12,41 +14,42 @@ FisheyeTransformer::FisheyeTransformer(Matrix3x4d mat)
 
 FisheyeTransformer::~FisheyeTransformer(){}
 
-void FisheyeTransformer::setCaptureMatrix(Matrix3x4d mat)
+void FisheyeTransformer::setCaptureMatrix(ProjectionMatrix mat)
 {
 	capture_matrix_ = mat;
 }
 
-void FisheyeTransformer::setFisheyeMatrix(Matrix3x4d mat)
+void FisheyeTransformer::setFisheyeMatrix(Matrix34f mat)
 {
 	fisheye_matrix_ = mat;
 }
 
-Matrix3x4d FisheyeTransformer::getCaptureMatrix()
+ProjectionMatrix FisheyeTransformer::getCaptureMatrix()
 {
 	return capture_matrix_;
 }
 
-Matrix3x4d FisheyeTransformer::getFisheyeMatrix()
+Matrix34f FisheyeTransformer::getFisheyeMatrix()
 {
 	return fisheye_matrix_;
 }
 
-void FisheyeTransformer::transform(Quarterniond orientation, Vector3d position, std::vector<uint8_t>& src_img, std::vector<uint8_t>& target_img)
+void FisheyeTransformer::transform(Pose pose, std::vector<uint8_t>& src_img, std::vector<uint8_t>& target_img)
 {
 	std::cout << "Transforming!" << std::endl;
 }
 
-Vector2d FisheyeTransformer::getCaptureWorldDirection(Quarterniond orientation, Vector3d position, unsigned int u, unsigned int v)
+Vector2f FisheyeTransformer::getCaptureWorldDirection(Pose pose, unsigned int u, unsigned int v)
 {
-	Vector2d vect(0.0, 0.0);
+	Vector2f vect(0.0, 0.0);
 
 	return vect;
 }
 
-Vector2d FisheyeTransformer::getFisheyeImagePixels(double phi, double theta)
+Vector2f FisheyeTransformer::getFisheyeImagePixels(float phi, float theta)
 {
-	Vector2d vect(0.0, 0.0);
+	Vector2f vect(0.0, 0.0);
 
 	return vect;
 }
+} //namespace fisheye end
