@@ -119,7 +119,7 @@ msr::airlib::ProjectionMatrix APIPCamera::getProjectionMatrix(const APIPCamera::
 	    }
 	    else
 	    {
-            float fov = Utils::degreesToRadians(capture->FOVAngle);
+            float fov = Utils::degreesToRadians((capture->FOVAngle)/2);
 		    if ((int32)ERHIZBuffer::IsInverted)
 		    {
 			    proj_mat = FReversedZPerspectiveMatrix(
