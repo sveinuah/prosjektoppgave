@@ -1,8 +1,42 @@
-%===================================== CHAP 4 =================================
+%===================================== CHAP 2 =================================
 
-\chapter{Implementation in Unreal Engine 4 with AirSim}
+\chapter{Theory}
 
-\section{Structuring 360 degree data}
+\section{Capturing and modeling wide angle cameras}
+
+Wide angle image capture usually refers to pictures taken with a field of view grater than $60^o$. Increasing the field of view lets the camera capture more information, but will also introduce distortion to the picture. This is caused by the fact that light either has to be redirected by lenses or mirrors, or the image needs to be constructed from multiple narrow angle. The different techniques each have their advantages and limitations:
+
+\subsection{pinhole model}
+The pinhole model is based on the first camera, the Camera Obscura, made in the 17th century. Since this model does not include a lens
+
+\subsection{Fisheye lens}
+
+\subsection{Catadioptric lens}
+
+\subsection{Merging multiple camera views}
+
+\section{Computer graphics}
+
+\subsection{Perspective projection}
+
+Normal graphics projection from scaled from meters to $x,y,x \in [-1,1]$:
+
+\begin{equation}
+    Proj\_mat = \begin{bmatrix}
+        \frac{AR}{tan(\frac{\theta}{2})}    &   0                                   &   0   &   0   \\
+        0                                   &   \frac{1}{tan(\frac{\theta}{2})}    &   0   &   0   \\
+        0                                   &   0                                   &   -\frac{n+f}{n-f} & 1\\
+        0                                   &   0                                   &   \frac{2nf}{n-f} & 0
+    \end{bmatrix}
+\end{equation}
+
+where $AR$ is the aspect ratio $\frac{Width}{Height}$, $n$ is the near clipping plane and $f$ is the far clipping plane. $\theta$ is the field of view. Here Horizontal field of view is equal to the vertical field of view.
+
+
+
+%%%% NEED TO BE REWRITTEN AND PLACED SOMEWHERE
+
+\section{TEMP\_PLACEMENT...Structuring 360 degree data}
 360 degree picture data representations are highly based on the type of camera used to cature it: A fisheye lense will make a circle in the rectangular matrix representation, causeing a lot of black "dead" spots with no information. The same type of representation is gained from using a Catadioptric lens. However this also removes the middle of the picture, because of the way it is constructed.
 
 Another way to represent a picture is by a unit-sphere coordiante system. Using a $\phi$~-~$\theta$ map, instead of pixels. This $\phi$~-~$\theta$ representation usually maps to a pixel on a cube or stitched image, assuming the different cameras have a common focal point. You can also go directly from a pinhole, fisheye, catadioptric or some other representation to a sphere representation. This will just cause non-captured parts to be black.
