@@ -40,13 +40,20 @@ void FisheyeTransformer::addToImage(const Image& src_img, const Pose& pose, cons
 	std::cout << "Adding to target image" << std::endl;
 }
 
-Vector2f FisheyeTransformer::calculateSphereCoords(const Pose& pose, const ProjectionMatrix& mat, const float img_x, const float img_y) const
+Vector2f FisheyeTransformer::calculateSphereCoords(const Pose& pose, float aspect_ratio, float focal_length, float img_x, float img_y) const
 {
-	const Vector3f img_pos(img_x, img_y, 1);
-	const Vector3f world_pos = VectorMath::transformToWorldFrame(img_pos, pose, true);
+	img_x = img_x/aspect_ratio;
+	const Vector3f img_pos(img_x, img_y, focal_length);
+	std::cout << "img_pos: " << img_pos << std::endl;
+	Vector3f world_pos = VectorMath::transformToWorldFrame(img_pos, pose, true);
+	std::cout << "world_pos: " << world_pos << std::endl;
+	world_pos.normalize();
+	std::cout << "world_pos normalized: " << world_pos << std::endl;
 
 	float theta = std::atan2(world_pos[1], world_pos[0]);
-	float phi = std::atan2(world_pos[0], world_pos[2] * std::cos(theta));
+	std::cout << "theta: " << theta << std::endl;
+	float phi = std::acos(world_pos[2]);
+	std::cout << "phi: " << phi << std::endl;
 
 	return Vector2f{theta, phi};
 }

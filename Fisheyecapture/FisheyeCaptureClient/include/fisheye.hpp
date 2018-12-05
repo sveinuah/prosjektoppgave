@@ -26,7 +26,7 @@ public:
 	{
 		image = std::vector<uint8_t>(x*y,0); //all black
 	}
-	~Image();
+	~Image() {}
 
 	std::vector<uint8_t> image;
 	unsigned int pixels_x;
@@ -35,9 +35,9 @@ public:
 
 class Camera {
 public:
-	Camera(const Pose& p, unsigned int x, unsigned int y, unsigned int fov_h, unsigned int fov_v)
+	Camera(const Pose& p, unsigned int x, unsigned int y, float fov_h, float fov_v)
 		: camera_pose_(p), fov_h_(fov_h), fov_v_(fov_v), image_(Image(x,y)) {}
-	~Camera();
+	~Camera() {}
 
 	void setPose(const Pose& p);
 	void setFOV(unsigned int fov_h, unsigned int fov_v);
@@ -54,7 +54,7 @@ class FisheyeTransformer {
 
 public:
 	FisheyeTransformer(const Camera& cam) : cam_(cam) {} 
-	~FisheyeTransformer();
+	~FisheyeTransformer() {}
 
 	void combineAndTransform(const std::vector<Image> src_images, const std::vector<Pose>& poses, const std::vector<ProjectionMatrix>& img_matrices, Image& target_img);
 
@@ -62,7 +62,7 @@ private:
 	Camera cam_;
 
 	void addToImage(const Image& src_img, const Pose& pose, const ProjectionMatrix& src_mat, Image& target_img);
-	Vector2f calculateSphereCoords(const Pose& pose, const ProjectionMatrix& mat, float img_x, float img_y) const;
+	Vector2f calculateSphereCoords(const Pose& pose, float aspect_ratio, float focal_length, float img_x, float img_y) const;
 };
 } //namespace fisheye end
 
