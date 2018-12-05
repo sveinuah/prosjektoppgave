@@ -6,7 +6,7 @@ STRICT_MODE_OFF
 #include "rpc/rpc_error.h"
 STRICT_MODE_ON
 
-#include "fisheyetransformer.hpp"
+#include "fisheye.hpp"
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 #include "common/common_utils/FileSystem.hpp"
 
@@ -23,9 +23,9 @@ typedef common_utils::FileSystem FileSystem;
 fisheye::ProjectionMatrix projectionMatrixAdaptor(const msr::airlib::ProjectionMatrix& proj_mat)
 {
 	fisheye::ProjectionMatrix mat;
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++) 
 	{
-		for (int j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++) 
 		{
 			mat(i,j) = proj_mat.matrix[i][j];
 		}
