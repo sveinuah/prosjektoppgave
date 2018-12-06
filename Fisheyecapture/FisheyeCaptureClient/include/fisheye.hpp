@@ -12,39 +12,72 @@
 namespace fisheye {
 
 	typedef Eigen::Matrix<float, 4, 4> ProjectionMatrix;
-	typedef Eigen::Matrix<float, 3, 4> Matrix34f;
-	typedef Eigen::Matrix<float, 2, 1, Eigen::DontAlign> Vector2f;
-	typedef Eigen::Vector3f Vector3f;
+	typedef Eigen::Matrix<float, 2, 2> Mat2x2;
 
-class Image {
-public:
-	Image(const std::vector<uint8_t>& img, unsigned int x, unsigned int y) 
-		: image(img), pixels_x(x), pixels_y(y) {}
+struct UnitSphereCoordinate {
+	float theta, phi;
+};
 
-	Image(unsigned int x, unsigned int y) 
-		: pixels_x(x), pixels_y(y)
-	{
-		image = std::vector<uint8_t>(x*y,0); //all black
-	}
-	~Image() {}
+struct ImageCoordinate {
+	float x, y;
+};
+
+struct PixelCoordinate {
+	unsigned int u, v;
+};
+
+struct Image {
 
 	std::vector<uint8_t> image;
-	unsigned int pixels_x;
-	unsigned int pixels_y;
+	unsigned int width;
+	unsigned int height;
+
+	Image(const std::vector<uint8_t>& img, unsigned int size_x, unsigned int size_y) 
+		: image(img), width(size_x), height(size_y) {}
+
+	Image(unsigned int size_x, unsigned int size_y) 
+		: width(size_x), height(size_y)
+	{
+		image = std::vector<uint8_t>(size_x * size_y, 0); //all black
+	}
+	~Image() {}
+};
+
+struct Lens {
+	float scale;
+	std::vector<float> scaramuzza_params; // Scaramuzza model constants
+
+	PixelCoordinate distortion_center;
+	Mat2x2 stretch_matrix;
+
+	Lens();
+	Lens(const Lens& l);
+	Lens(float scale, const std::vector<float>& params);
+	Lens(float scale, const std::vector<float>& params, PixelCoordinate dist_c, const Mat2x2& stretch_m);
+
+	PixelCoordinate Project();
 };
 
 class Camera {
 public:
-	Camera(const Pose& p, unsigned int x, unsigned int y, float fov_h, float fov_v)
-		: camera_pose_(p), fov_h_(fov_h), fov_v_(fov_v), image_(Image(x,y)) {}
+	Camera(const Pose& p, unsigned int size_x, unsigned int size_y, float fov_h, float fov_v)
+		: camera_pose_(p), fov_h_(fov_h), fov_v_(fov_v), image_(Image(size_x,size_y)) {}
+
+	Camera(const Pose& p, unsigned int size_x, unsigned int size_y, float fov_h, float fov_v, const Lens& l)
+		: camera_pose_(p), fov_h_(fov_h), fov_v_(fov_v), image_(Image(size_x,size_y)), lens_(Lens(l)) {}
+
 	~Camera() {}
 
 	void setPose(const Pose& p);
 	void setFOV(unsigned int fov_h, unsigned int fov_v);
 	void printParameters();
 
+	PixelCoordinate unitSphereToPixel(UnitSphereCoordinate c);
+	UnitSphereCoordinate pixelToUnitSphere(PixelCoordinate c);
+
 private:
 	Pose camera_pose_;
+	Lens lens_;
 	unsigned int fov_h_;
 	unsigned int fov_v_;
 	Image image_;
@@ -53,16 +86,16 @@ private:
 class FisheyeTransformer {
 
 public:
-	FisheyeTransformer(const Camera& cam) : cam_(cam) {} 
+	FisheyeTransformer(const Camera& cam) : c_(cam) {} 
 	~FisheyeTransformer() {}
 
-	void combineAndTransform(const std::vector<Image> src_images, const std::vector<Pose>& poses, const std::vector<ProjectionMatrix>& img_matrices, Image& target_img);
+	void combineAndTransform(const std::vector<Image> src_images, const std::vector<Pose>& poses, const std::vector<ProjectionMatrix>& img_matrices);
 
 private:
-	Camera cam_;
+	Camera c_;
 
-	void addToImage(const Image& src_img, const Pose& pose, const ProjectionMatrix& src_mat, Image& target_img);
-	Vector2f calculateSphereCoords(const Pose& pose, float aspect_ratio, float focal_length, float img_x, float img_y) const;
+	void addToImage(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat);
+	UnitSphereCoordinate calculateSphereCoords(const Pose& pose, float aspect_ratio, float focal_length, ImageCoordinate feature) const;
 };
 } //namespace fisheye end
 
