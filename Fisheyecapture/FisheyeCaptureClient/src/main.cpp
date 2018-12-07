@@ -49,6 +49,10 @@ int main()
 		"bottom_center"
 	};
 
+	VectorMath::Pose cameraPose;
+	fisheye::Camera camera(cameraPose, 100, 50, 60.0f, 60.0f);
+	fisheye::FisheyeTransformer transformer(camera);
+
 	std::vector<ImageRequest> requests;
 	std::vector<fisheye::ProjectionMatrix> camera_matrices;
 	for (int i = 0; i < NUM_CAMERAS; i++)
@@ -80,6 +84,10 @@ int main()
 
 		for (const ImageResponse& response : responses)
 		{
+			VectorMath::Pose img_cam_pose(response.camera_position, response.camera_orientation);
+			fisheye::Image response_img(response.image_data_uint8, response.width, response.height);
+			transformer.transformSingle(response_img, img_cam_pose, camera_matrices[0]);
+
 			if (folder_path != "")
 			{
 				std::string file_path = FileSystem::combine(folder_path, response.camera_name + "_" + std::to_string(response.time_stamp));
