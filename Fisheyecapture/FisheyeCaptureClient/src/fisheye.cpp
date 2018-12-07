@@ -56,11 +56,13 @@ void Camera::printParameters()
 PixelCoordinate unitSphereToPixel(UnitSphereCoordinate c)
 {
 	std::cout << "Getting pixel coords for {" << c.theta << ", " << c.phi << "}" << std::endl;
+	return {0, 0};
 }
 
 UnitSphereCoordinate pixelToUnitSphere(PixelCoordinate c)
 {
 	std::cout << "Getting unit sphere coords for {" << c.u << ", " << c.v << "}" <<std::endl;
+	return {0, 0};
 }
 
 
@@ -73,25 +75,45 @@ void FisheyeTransformer::combineAndTransform(const std::vector<Image> src_images
 	}
 }
 
+void FisheyeTransformer::transformSingle(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat)
+{
+	addToImage(src_img, src_pose, src_mat);
+}
+
 void FisheyeTransformer::addToImage(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat)
 {
-	std::cout << "Adding to target image" << std::endl;
+	float focal_length = src_mat(1,1);
+	float aspect_ratio = src_mat(0,0) / focal_length;
+	int num_pixels = src_img.width * src_img.height;
+
+	float h = static_cast<float>(src_img.height);
+	float w = static_cast<float>(src_img.width);
+
+	for (int i = 0; i < num_pixels; i++)
+	{
+		PixelCoordinate pixel = src_img.indexToPixel(i*4);
+		ImageCoordinate feature;
+
+		feature.x = (static_cast<float>(pixel.u) * 2.0f) / w - 1.0f;
+		feature.x = feature.x * aspect_ratio;
+		feature.y = (static_cast<float>(pixel.v) * 2.0f) / h - 1.0f;
+
+		UnitSphereCoordinate vec = calculateSphereCoords(src_pose, aspect_ratio, focal_length, feature);
+		std::cout 	<< "Pixel: {" << pixel.u << ", " << pixel.v << "} => "
+					<< "img coordinate: {" << feature.x << ", " << feature.y << "} => "
+					<< "Sperical: {" << vec.theta << ", " << vec.phi << "}" << std::endl;
+	}
 }
 
 UnitSphereCoordinate FisheyeTransformer::calculateSphereCoords(const Pose& pose, float aspect_ratio, float focal_length, ImageCoordinate feature) const
 {
 	feature.x = feature.x / aspect_ratio;
 	const VectorMath::Vector3f img_pos(feature.x, feature.y, focal_length);
-	std::cout << "img_pos: " << img_pos << std::endl;
 	VectorMath::Vector3f world_pos = VectorMath::transformToWorldFrame(img_pos, pose, true);
-	std::cout << "world_pos: " << world_pos << std::endl;
 	world_pos.normalize();
-	std::cout << "world_pos normalized: " << world_pos << std::endl;
 
-	float theta = std::atan2(world_pos[1], world_pos[0]);
-	std::cout << "theta: " << theta << std::endl;
-	float phi = std::acos(world_pos[2]);
-	std::cout << "phi: " << phi << std::endl;
+	float theta = VectorMath::Utils::radiansToDegrees(std::atan2(world_pos[1], world_pos[0]));
+	float phi = VectorMath::Utils::radiansToDegrees(std::acos(world_pos[2]));
 
 	return {theta, phi};
 }

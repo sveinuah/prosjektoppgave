@@ -26,21 +26,33 @@ struct PixelCoordinate {
 	unsigned int u, v;
 };
 
+enum struct Color {
+	RED = 0,
+	GREEN,
+	BLUE,
+	ALPHA
+};
+
 struct Image {
 
 	std::vector<uint8_t> image;
 	unsigned int width;
 	unsigned int height;
 
-	Image(const std::vector<uint8_t>& img, unsigned int size_x, unsigned int size_y) 
+	Image(const std::vector<uint8_t>& img, unsigned int size_x, unsigned int size_y)
 		: image(img), width(size_x), height(size_y) {}
 
-	Image(unsigned int size_x, unsigned int size_y) 
+	Image(unsigned int size_x, unsigned int size_y)
 		: width(size_x), height(size_y)
 	{
-		image = std::vector<uint8_t>(size_x * size_y, 0); //all black
+		image = std::vector<uint8_t>(size_x * size_y * 4, 0); //all black RGBA color
 	}
 	~Image() {}
+
+	PixelCoordinate indexToPixel(int index) const
+	{
+		return {(index/4)%width, (index/4)/width};
+	}
 };
 
 struct Lens {
@@ -64,7 +76,7 @@ public:
 		: camera_pose_(p), fov_h_(fov_h), fov_v_(fov_v), image_(Image(size_x,size_y)) {}
 
 	Camera(const Pose& p, unsigned int size_x, unsigned int size_y, float fov_h, float fov_v, const Lens& l)
-		: camera_pose_(p), fov_h_(fov_h), fov_v_(fov_v), image_(Image(size_x,size_y)), lens_(Lens(l)) {}
+		: lens_(Lens(l)), camera_pose_(p), fov_h_(fov_h), fov_v_(fov_v), image_(Image(size_x,size_y)) {}
 
 	~Camera() {}
 
@@ -76,8 +88,8 @@ public:
 	UnitSphereCoordinate pixelToUnitSphere(PixelCoordinate c);
 
 private:
-	Pose camera_pose_;
 	Lens lens_;
+	Pose camera_pose_;
 	unsigned int fov_h_;
 	unsigned int fov_v_;
 	Image image_;
@@ -90,6 +102,7 @@ public:
 	~FisheyeTransformer() {}
 
 	void combineAndTransform(const std::vector<Image> src_images, const std::vector<Pose>& poses, const std::vector<ProjectionMatrix>& img_matrices);
+	void transformSingle(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat);
 
 private:
 	Camera c_;
