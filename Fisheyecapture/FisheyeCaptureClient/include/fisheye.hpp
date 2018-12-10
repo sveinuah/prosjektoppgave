@@ -40,18 +40,32 @@ struct Image {
 	unsigned int height;
 
 	Image(const std::vector<uint8_t>& img, unsigned int size_x, unsigned int size_y)
-		: image(img), width(size_x), height(size_y) {}
+		: width(size_x), height(size_y) 
+	{
+		for (std::vector<uint8_t>::size_type i = 0; i < img.size(); i++)
+		{
+			image.push_back(img[i]);
+		}
+	}
 
 	Image(unsigned int size_x, unsigned int size_y)
 		: width(size_x), height(size_y)
 	{
-		image = std::vector<uint8_t>(size_x * size_y * 4, 0); //all black RGBA color
+		for (unsigned int i = 0; i < size_x*size_y*4; i++)
+		{
+			image.push_back(0); //all black
+		}
 	}
 	~Image() {}
 
 	PixelCoordinate indexToPixel(int index) const
 	{
 		return {(index/4)%width, (index/4)/width};
+	}
+
+	unsigned int pixelToIndex(PixelCoordinate p) const
+	{
+		return width * p.v + p.u;
 	}
 };
 
@@ -66,8 +80,6 @@ struct Lens {
 	Lens(const Lens& l);
 	Lens(float scale, const std::vector<float>& params);
 	Lens(float scale, const std::vector<float>& params, PixelCoordinate dist_c, const Mat2x2& stretch_m);
-
-	PixelCoordinate Project();
 };
 
 class Camera {
@@ -84,28 +96,30 @@ public:
 	void setFOV(unsigned int fov_h, unsigned int fov_v);
 	void printParameters();
 
-	PixelCoordinate unitSphereToPixel(UnitSphereCoordinate c);
+	PixelCoordinate project(UnitSphereCoordinate c);
 	UnitSphereCoordinate pixelToUnitSphere(PixelCoordinate c);
+	Image image_;
 
 private:
 	Lens lens_;
 	Pose camera_pose_;
 	unsigned int fov_h_;
 	unsigned int fov_v_;
-	Image image_;
+	
 };
 
 class FisheyeTransformer {
 
 public:
-	FisheyeTransformer(const Camera& cam) : c_(cam) {} 
+	FisheyeTransformer(const Camera& cam) : c_(cam) {}
 	~FisheyeTransformer() {}
 
 	void combineAndTransform(const std::vector<Image> src_images, const std::vector<Pose>& poses, const std::vector<ProjectionMatrix>& img_matrices);
 	void transformSingle(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat);
 
-private:
 	Camera c_;
+private:
+	
 
 	void addToImage(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat);
 	UnitSphereCoordinate calculateSphereCoords(const Pose& pose, float aspect_ratio, float focal_length, ImageCoordinate feature) const;

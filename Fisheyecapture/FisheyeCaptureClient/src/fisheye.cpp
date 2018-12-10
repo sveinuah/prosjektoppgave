@@ -53,10 +53,22 @@ void Camera::printParameters()
 	std::cout << "Image resolution: " << image_.width << "x" << image_.height << std::endl;
 }
 
-PixelCoordinate unitSphereToPixel(UnitSphereCoordinate c)
+PixelCoordinate Camera::project(UnitSphereCoordinate c)
 {
-	std::cout << "Getting pixel coords for {" << c.theta << ", " << c.phi << "}" << std::endl;
-	return {0, 0};
+	float r = std::sin(c.phi); //todo implement lens
+	ImageCoordinate img_c;
+	img_c.x = r * std::cos(c.theta);
+	img_c.y = r * std::sin(c.theta);
+
+	float imgw = static_cast<float>(image_.width);
+	float imgh = static_cast<float>(image_.height);
+	float u = imgw/2 * img_c.x + imgw/2;
+	float v = imgh/2 * img_c.y + imgh/2;
+	
+	PixelCoordinate p;
+	p.u = static_cast<unsigned int>(u);
+	p.v = static_cast<unsigned int>(v);
+	return {p.u, p.v};
 }
 
 UnitSphereCoordinate pixelToUnitSphere(PixelCoordinate c)
@@ -73,11 +85,13 @@ void FisheyeTransformer::combineAndTransform(const std::vector<Image> src_images
 	{
 		addToImage(src_images[i], poses[i], img_matrices[i]);
 	}
+	std::cout << "Transformation complete" << std::endl;
 }
 
 void FisheyeTransformer::transformSingle(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat)
 {
 	addToImage(src_img, src_pose, src_mat);
+	std::cout << "Single Transformation complete" << std::endl;
 }
 
 void FisheyeTransformer::addToImage(const Image& src_img, const Pose& src_pose, const ProjectionMatrix& src_mat)
@@ -99,9 +113,13 @@ void FisheyeTransformer::addToImage(const Image& src_img, const Pose& src_pose, 
 		feature.y = (static_cast<float>(pixel.v) * 2.0f) / h - 1.0f;
 
 		UnitSphereCoordinate vec = calculateSphereCoords(src_pose, aspect_ratio, focal_length, feature);
-		std::cout 	<< "Pixel: {" << pixel.u << ", " << pixel.v << "} => "
-					<< "img coordinate: {" << feature.x << ", " << feature.y << "} => "
-					<< "Sperical: {" << vec.theta << ", " << vec.phi << "}" << std::endl;
+		PixelCoordinate p = c_.project(vec);
+		c_.image_.image[c_.image_.pixelToIndex(p)] = src_img.image[i];
+		c_.image_.image[c_.image_.pixelToIndex(p) + 1] = src_img.image[i + 1];
+		c_.image_.image[c_.image_.pixelToIndex(p) + 2] = src_img.image[i + 2];
+		c_.image_.image[c_.image_.pixelToIndex(p) + 3] = src_img.image[i + 3];
+
+		std::cout << "{" << unsigned(src_img.image[i*4]) << ", " << unsigned(src_img.image[i*4+1]) << ", " << unsigned(src_img.image[i*4+2]) << ", " << unsigned(src_img.image[i*4+3]) << "} ";
 	}
 }
 
@@ -112,8 +130,8 @@ UnitSphereCoordinate FisheyeTransformer::calculateSphereCoords(const Pose& pose,
 	VectorMath::Vector3f world_pos = VectorMath::transformToWorldFrame(img_pos, pose, true);
 	world_pos.normalize();
 
-	float theta = VectorMath::Utils::radiansToDegrees(std::atan2(world_pos[1], world_pos[0]));
-	float phi = VectorMath::Utils::radiansToDegrees(std::acos(world_pos[2]));
+	float theta = std::atan2(world_pos[1], world_pos[0]);
+	float phi = std::acos(world_pos[2]);
 
 	return {theta, phi};
 }
