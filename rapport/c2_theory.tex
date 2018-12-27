@@ -1,24 +1,212 @@
-%===================================== CHAP 2 =================================
 
 \chapter{Theory}
+\section{Modeling wide angle cameras}
 
-\section{Capturing and modeling wide angle cameras}
+Since all cameras project a 3D scene onto a 2D plane, there will be information lost about the depth of the image. It is therefore not possible to calculate the exact placement of an object from a single picture, unless you have extra information about the objects in the picture. For this reason it is easy to create a projection in a 3D scene, but hard to create a scene from a projection. In addition to this, the amount of pixels and the field of view also affect the information and detail in the captured image.
 
-Wide angle image capture usually refers to pictures taken with a field of view grater than $60^o$. Increasing the field of view lets the camera capture more information, but will also introduce distortion to the picture. This is caused by the fact that light either has to be redirected by lenses or mirrors, or the image needs to be constructed from multiple narrow angle. The different techniques each have their advantages and limitations:
+Wide angle image capture usually refers to pictures taken with a field of view grater than $60^\circ$. Increasing the field of view lets the camera capture more of the scene. However, the details also have to be compressed in order to fit in the image. This creates a trade-off between the amount of the scene captured and the detail level of each part. This can to some degree be countered by increasing the resolution. Doing this will however increase the computational complexity required to process the images.
 
-\subsection{pinhole model}
-The pinhole model is based on the first camera, the Camera Obscura, made in the 17th century. Since this model does not include a lens
+\subsection{pinhole projection}
+The pinhole model is based on the first camera, the Camera Obscura, made in 1568. It captures a scene by projecting straight light rays through a common focal point, and through a plane. The projection itself is made from where the light rays intersect the projection plane. The focal length, $f$, and the image plane size will then decide the field of view, $\theta_x$ and $\theta_y$, as shown in Figure~\ref{fig:pinhole}. 
 
-\subsection{Fisheye lens}
+\begin{figure}
+    \centering
 
-\subsection{Catadioptric lens}
+    \tdplotsetmaincoords{80}{145}
+    \begin{tikzpicture}[tdplot_main_coords, scale = 1.8]
+    
+        \tdplotsetrotatedcoords{0}{-90}{90}
+        \draw[tdplot_rotated_coords, ->] (-0.7,0,0) -- (2,0,0) node[below right]{$X$};
+        \draw[tdplot_rotated_coords, ->] (0,-0.5,0) -- (0,1,0) node[right]{$Y$};
+        \draw[tdplot_rotated_coords, dashed] (0,0,-0.5) -- (0,0,9.2);
+        \draw[tdplot_rotated_coords, ->] (0,0,9.2) -- (0,0,10) node[below]{$z,Z$};
+        
+        \pgfmathsetmacro{\rvec}{8}
+        \pgfmathsetmacro{\imgradius}{3}
+        \pgfmathsetmacro{\thetavec}{12}
+        \pgfmathsetmacro{\phivec}{8}
+        
+        \coordinate (O) at (0,0,0);
+        \tdplotsetcoord{P1}{\rvec}{90 -\phivec}{180 - \thetavec}
+        \tdplotsetcoord{longP1}{\rvec*1.1}{90 -\phivec}{180 - \thetavec}
+        \tdplotsetcoord{P2}{\rvec}{90 +\phivec}{180 - \thetavec}
+        \tdplotsetcoord{longP2}{\rvec*1.1}{90 +\phivec}{180 - \thetavec}
+        \tdplotsetcoord{P3}{\rvec}{90 + \phivec}{180 + \thetavec}
+        \tdplotsetcoord{longP3}{\rvec*1.1}{90 +\phivec}{180 + \thetavec}
+        \tdplotsetcoord{P4}{\rvec}{90 - \phivec}{180 + \thetavec}
+        \tdplotsetcoord{longP4}{\rvec*1.1}{90 -\phivec}{180 + \thetavec}
+        
+        \tdplotsetcoord{IMG1}{\imgradius}{90 -\phivec}{180 - \thetavec}
+        \tdplotsetcoord{IMG2}{\imgradius}{90 +\phivec}{180 - \thetavec}
+        \tdplotsetcoord{IMG3}{\imgradius}{90 +\phivec}{180 + \thetavec}
+        \tdplotsetcoord{IMG4}{\imgradius}{90 -\phivec}{180 + \thetavec}
+        \coordinate (IMGC) at (-2.906,0,0);
+        
+        \shade[tdplot_rotated_coords, ball color=blue!50, opacity = 0.7] (0,0,8) circle (1cm); 
+
+        \tdplotsetrotatedcoordsorigin{(IMGC)} %\imgradius*sin(90-\phivec)*cos(180-\thetavec)
+        \shade[tdplot_rotated_coords, ball color=blue!50, opacity = 0.7] (0,0,0) circle (0.375);
+        \draw[tdplot_rotated_coords, ->] (-0.7,0,0) -- (2,0,0) node[below right]{$x$};
+        \draw[tdplot_rotated_coords, ->] (0,-0.5,0) -- (0,1,0) node[right]{$y$};
+        
+        \draw[] (IMG1) -- (IMG2) -- (IMG3) -- (IMG4) -- cycle;
+      
+        \draw[] (0,0,0.75) -- (0,0,0.85); \draw[] (0,0,0.8) -- (-2.906,0,0.8); \draw[] (-2.906,0,0.75) -- (-2.906,0,0.85);
+        \draw[] (-1.45,0,1) node{$f$};
+        
+        \draw[thick, opacity = 0.3] (O) -- (P1); \draw[dashed, opacity = 0.3] (P1) -- (longP1);
+        \draw[thick, opacity = 0.3] (O) -- (P2); \draw[dashed, opacity = 0.3] (P2) -- (longP2);
+        \draw[thick, opacity = 0.3] (O) -- (P3); \draw[dashed, opacity = 0.3] (P3) -- (longP3);
+        \draw[thick, opacity = 0.3] (O) -- (P4); \draw[dashed, opacity = 0.3] (P4) -- (longP4);
+        
+        \tdplotsetthetaplanecoords{180-\thetavec}
+        \tdplotdrawarc[tdplot_rotated_coords]{(O)}{5}{90-\phivec}{90+\phivec}{anchor=west}{$\theta_y$}
+        \tdplotsetrotatedcoords{0}{\phivec}{90}
+        \tdplotdrawarc[tdplot_rotated_coords]{(O)}{5}{90-\thetavec}{90+\thetavec}{anchor=south}{$\theta_x$}
+        
+        
+    \end{tikzpicture}
+
+    \caption{Pinhole projection with the image plane between the focal point and the object}
+    \label{fig:pinhole}
+    
+\end{figure}
+
+Using the properties of similar triangles, the relationship between the World coordinates, $X,Y,Z$ and the image coordinates $x,y$ becomes:
+
+\begin{align}
+    tan(\phi_x) &= \frac{x}{f} = \frac{X}{Z} & tan(\phi_y) &= \frac{y}{f} = \frac{Y}{Z} \\
+    x &= f\frac{X}{Z} & y &=f\frac{Y}{Z}
+    \label{eq:pinhole_relation}
+\end{align}
+
+As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the sizes nonlinear. In order to present this in matrix form, the homogenous coordinates $p=[x,y,1]^\top$ and $P=[X,Y,Z,1]^\top$ are used. The matrix transformation is shown in Equation~\eqref{eq:pinhole_matrix}, with the imtermediate step $p^*$ being $p$ scaled by $Z$.
+
+\begin{align}
+    p^* &= \begin{bmatrix}
+        x^* \\ y^* \\ z^*
+    \end{bmatrix} = \begin{bmatrix}
+        f & 0 & 0 & 0 \\
+        0 & f & 0 & 0 \\
+        0 & 0 & 1 & 0
+    \end{bmatrix}\begin{bmatrix}
+        X \\ Y \\ Z \\ 1
+    \end{bmatrix} &
+    p &= \frac{1}{z^*}p^*
+    \label{eq:pinhole_matrix}
+\end{align}
+
+Since the light rays need to pass through the pinhole and onto the image plane, it is not possible to have a field of view larger than $180^\circ$. As seen in Equation~\eqref{eq:pinhole_matrix}, the projected object is also scaled by the distance to it, causing the points where the vertical field of view is $180^\circ$ to be singular. 
+
+In a digital camera, the image plane consists of a small light sensitive chip, called a CCD. To get additional light to hit this chip, in addition to increasing the field of view, lenses are used. Altering the shape of the lens will change the field of view, as well as the focal length. This helps capturing a larger scene, with more details, while being able to keep the image plane small at the same size. 
+
+\todo[inline]{Distortions, Tranform to pixel coordinates, lens figure}
+
+% This tangential relationship makes it impossible to have a field of view of $180^\circ$. Since large fields of view in this case also means small focal lengths and a large $tan(\phi)$, you will also introduce increasing errors due to the precision in the calculations \todo{source}. On the camera side, the small focal length causes distortions to have greater effect\todo{source}. This effect can be seen in Figure \todo{insert Figure}, making the pinhole cameras badly suited for large fields of view.
+
+\subsection{Fisheye projection}
+
+To solve the problem the pinhole camera has with large fields of view, the fisheye lens projects the image onto a spherical image plane, where the radial distance to this plane is modelled based on the lens type used \todo{source}. This curvature of the image plane makes it easier to describe the image plane in spherical coordinates. The relationship between the image coordinates $p = [\theta,\phi]$ and the world coordinates $P = [X,Y,Z]$ then becomes:
+
+\begin{subequations}
+\begin{equation}
+   \theta = arctan\left(\frac{Y}{X}\right)
+    \label{eq:fisheye_theta}
+\end{equation}
+\begin{equation}
+    \phi = arccos\left(\frac{Z}{R}\right) = arccos\left(\frac{Z}{\sqrt{X^2+Y^2+Z^2}}\right)
+    \label{eq:fisheye_phi}
+\end{equation}
+\label{eq:fisheye}
+\end{subequations}
+
+Equation \eqref{eq:fisheye} shows that the projection onto a spherical plane removes the singularities seen in Equation \eqref{eq:pinhole_relation}. However, the spherical projection will also introduce severe radial distortion, making straight lines curve in the picture \todo{figure}. Features towards the edges of the field of view will also be compressed heavily. This will cause information to be lost \todo{source}. 
+
+\subsection{Cylindrical projection}
+
+The goal of the cylindrical projection and camera types is to reduce the radial distortion and feature compression, while maintaining the ability to capture images with a horizontal field of view larger than $180^o$. Along the vertical y-axis, the cylindrical projection functions like a pinhole projection, where the mapping is identical to Equation \todo{fix reference and or phrasing}\eqref{eq:pinhole_relation}. For the horizontal axis, the polar coordinate $\theta$ is used, such that the mapping to the image plane becomes:
+
+\begin{subequations}
+\begin{equation}
+    \theta = arctan\left(\frac{X}{Z}\right)
+    \label{eq:cylindrical_theta}
+\end{equation}
+\begin{equation}
+    y = R\frac{Y}{Z}
+    \label{eq:cylindrical_y}
+\end{equation}
+\label{eq:cylindrical}
+\end{subequations}
+
+Theoretically this representation removes all vertical radial distortion, however it is still subject to the introduction of distortion through imperfect lenses or image plane alignment. Using the same vertical mapping as the pinhole model, also limits the vertical field of view, causing a top and bottom blind spot.
+
+Cameras using this projection types are not that common, but there are some:...\todo{source}. This projection type is however highly suited to project and stitch pictures taken by a camera rotating around an axis, as is used for the panorama capture function in modern phone cameras\todo{source}.
+
+\subsection{Catadioptric projection}
+
+Using mirrors to reflect the light, early catadioptric lenses could achieve large focal lengths without increasing the physical length of the objective\todo{source}. This made the technology ideal for telescopes and narrow angle imaging. Later, the same principle has developed to include large field of view cameras and panoramic imaging\todo{source}. 
+
+Since the mirror has to be placed within the field of view, the catadioptric lens will always cause a blind spot, and potentially shadows of the mirror mount appearing in the image \todo{source}. To reduce this effect, the mount has to be made more fragile. This may make the cameras unsuited for applications with significant vibrations \todo{source}.
+
+The pixel mapping and field of view is highly dependent on the reflective surface used. Most surfaces will introduce similar radial distortions to the fisheye lens, but there has been developed catadioptric lenses, producing rectilinear projections \todo{source}, however this has to be mounted at a fixed distance from the ground, making them unfit for moving objects. Nayar S. K. made a wide angle, catadioptric lens \todo{source} with a single viewpoint, and proposes further a setup where two of these are mounted back to back to produce a full spherical image. \todo[inline]{Finish the paragraph...}
+
+
+\subsection{Panomorph projection}
+
+The panomorph lens types are designed around an non-uniform distribution of pixels within the field of view, and is patented by ImmerVision \todo{source/patentsource}. This creates an opportunity to focus on important parts of the field of view, and enhance the resolution in these parts\todo{source}. The lens itself used in these types of cameras resemble the fisheye lens, and share the advantage its advantages over catadioptric lenses\todo{source}. 
+
+Different types of panomorphic lenses has been proposed for different applications. For example in 2010 it was proposed to use a panomorph lens in endoscopy\cite{endoscopypano}. This lens is based on the human eye, and its increased resolution around the center of vision. Other aplications include security cameras\todo{source}, where the outlying areas has been given increased resolution, to counteract the compact representation provided by normal fisheye cameras.
+
+Since the pixel density varies within the field of view, the lens is more difficult to construct as well as model. Fortunately, different types of distortion control are available today\todo{source}, as well as calibration tools. Depending on the amount of distortion, the solution may be hard to simulate in real time. Especially with reduced computing power \todo{source}.
 
 \subsection{Merging multiple camera views}
 
+
+
 \section{Computer graphics}
+
+Our eyes and cameras capture the 3D world from light hitting photosensitive elements. An object directly or partly behind another object will therefore be hidden in the picture, unless captured by a reflection. In addition to this, shadows, colors and lighting of objects in the scene are all based on how the light rays bounce around in the room, and eventually hit the camera lens. In computer graphics, there is no inherent concept of light. This means that all the effects that are based around light must be estimated or simulated. 
+
+There are two main approaches to this: One approach is Ray tracing, which simulates light rays as they travel from the camera center, through a pixel and to the light source. Based on the intersection with objects and the properties of the object itself, reflected rays and shadow rays will be traced, to find the elements to be captured in the pixel. The other approach is called Rasterization. Rasterization splits each object into basic shapes and iterates over each, projecting them onto the image. This step does however not account for hidden shapes, requiring additional visibility chacks through face culling and z-buffering. 
+
+\subsection{Ray Tracing}
+
+Ray tracing techniques have existed as a fully developed technique since 1986 \cite{raytraceblog}. Today, Ray tracing is highly used in film making for CGI, which is Computer-generated imagery to be applied on its own, or in the same frame as actual camera footage. The inherent ability ray tracing has to mimic real world light, enables the algorithms to produce very realistic images. The downside is that tracing light rays, all their reflections, refractions and shadows they cast, is really computationally expensive.
+
+Since 1986 much research has gone into improving the rendering time of these images. \cite{wald2009state} summarizes many of these, but also shows the conflicts between ray tracing approaches for video games, and approaches for movie making. The article states that the movie making approach is centered around making data structures for efficient computation, while more or less ignoring the building time of these structures. This can be backed up by Section 3 of \cite{carsmovie}, where the main focus is shown to be memory management and quality. In real time applications however, these data structures needs to be built and rebuilt, in addition to the computation, in real time. 
+
+Nvidia recently developed their RTX-series of graphics cards \cite{raytraceblog}, promising to revolutionize the ways shadows, reflections and lighting are shown in real-time image processing, with the use of ray tracing. Based on their launch event presentation \cite{NvidiaConference}, this will be realized by; the integration of ray tracing cores, a locally developed ray tracing acceleration algorithm and deep learning. The ray tracing cores are are specialized processing units, designed to parallelize ray tracing calculations, while the ray tracing acceleration refers to a search algorithm for finding intersections between light rays and objects. Lastly the deep learning portion uses a previously trained deep learning network, made specifically to upscale and fill in the gaps of lower quality images, with the goal of reducing the amount of rays needed to be calculated, as well as to perform anti-aliasing tasks.
+
+\subsection{The graphical pipeline}
+
+In order to decide which objects to capture in the image, most rendering techniques involve a process called clipping or culling, depending on the source. This process consists of selecting which objects are in the field of view, how the objects should be oriented in the image, and which objects that are hidden, or partially hidden. 
+
+----------
+
+Computer graphics differ from cameras in the sense that it is made to project the image to a screen, and the main focus is how this projection is viewed by the human eye. There are two main techniques used for this: Perspective projection and Orthographic projection. And both define three main parts:
+\begin{itemize}
+    \item A reference point with a view direction
+    \item A 3D object
+    \item A projection plane to hold the projection
+\end{itemize}
+
+In addition to this there is usually defined two clipping planes defining the near and far end of the view distance. This means that objects closer to the reference point than the near clipping plane, and objects further away than the far clipping plane, will not be projected. Figure~\ref{fig:perspective_projection} shows this in a perspective projection. Here the near clipping plane is combined with the projection and referenced as the computer screen. However they may be disconnected, depending on what the projection should capture.
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.6\textwidth]{perspective_projection}
+    \caption{Perspective projection with combined projection plane and near clipping plane}
+    \label{fig:perspective_projection}
+\end{figure}
 
 \subsection{Perspective projection}
 
+As seen in Figure~\ref{fig:perspective_projection}, perspective projection has a lot in common with the pinhole projection. This makes the projection carry a sense of depth in the image. Objects closer to the near clipping plane becomes larger, and objects further away becomes smaller. The focus point at the origin represents the human eye, and how it would perceive the projected world.
+
+To make the projection map to each pixel on a screen \todo[inline]{insert maths. need reference matrices}
+
+%%% Need to replace the rest %%%
+\subsection*{\#\#\#to be fitted into perspective projection\#\#\#}
 Normal graphics projection from scaled from meters to $x,y,x \in [-1,1]$:
 
 \begin{equation}
@@ -31,6 +219,18 @@ Normal graphics projection from scaled from meters to $x,y,x \in [-1,1]$:
 \end{equation}
 
 where $AR$ is the aspect ratio $\frac{Width}{Height}$, $n$ is the near clipping plane and $f$ is the far clipping plane. $\theta$ is the field of view. Here Horizontal field of view is equal to the vertical field of view.
+
+
+\subsection{Othographic projection}
+
+Orthographic projection differ from perspective projection in the sense that all projection lines are parallel. As we see in Figure~\ref{fig:orthographic_projection}, this means that there is no focus point for the projection lines, but rather just a view direction. This causes the relative sizes in the image to be preserved, making the projection type ideal for schematics and applications that require measurements.
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[width=0.5\textwidth]{3d_ortho}
+    \caption{Orthographic projection}
+    \label{fig:orthographic_projection}
+\end{figure}
 
 
 

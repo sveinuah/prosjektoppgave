@@ -8,8 +8,12 @@
 
 \usepackage{setspace}
 \usepackage{subfig}
+\usepackage{tikz}
+\usepackage{tikz-3dplot}
 \usepackage{graphicx}
-\graphicspath{{rapport/fig/}}
+\graphicspath{{./fig/}{./fig/Intro/}{./fig/Theory/}{./fig/Engines/}%
+{./fig/Implementation/}{./fig/Results/}}
+\DeclareGraphicsExtensions{.pdf,.eps,.png,.jpg}
 
 \usepackage{todonotes}
 
@@ -41,7 +45,10 @@
 \usepackage[font=small,labelfont=bf]{caption}
 \usepackage{fancyhdr}
 
-\usepackage{natbib}
+\usepackage[style=ieee]{biblatex}
+\usepackage{csquotes} % to make Biblatex happy
+\addbibresource{mylib.bib}
+
 \usepackage{float}
 \restylefloat{figure}
 
