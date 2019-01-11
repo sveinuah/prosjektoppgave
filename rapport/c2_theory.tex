@@ -1,12 +1,10 @@
 
 \chapter{Theory}
-\section{Modeling wide angle cameras}
+\section{Modeling of cameras}
 
-Since all cameras project a 3D scene onto a 2D plane, there will be information lost about the depth of the image. It is therefore not possible to calculate the exact placement of an object from a single picture, unless you have extra information about the objects in the picture. For this reason it is easy to create a projection in a 3D scene, but hard to create a scene from a projection. In addition to this, the amount of pixels and the field of view also affect the information and detail in the captured image.
+Since all cameras project a 3D scene onto a 2D plane, there will be information lost about the depth of the image. It is therefore not possible to calculate the exact placement of an object from a single picture, unless you have extra information about the objects in the picture. For this reason it is easy to create a projection in a 3D scene, but hard to create a scene from a projection. In addition to this, the amount of pixels and the field of view also affect the information and detail in the captured image. The most basic camera model is called the pinhole model, and is applicable for most cameras without high distortion lenses.
 
-Wide angle image capture usually refers to pictures taken with a field of view grater than $60^\circ$. Increasing the field of view lets the camera capture more of the scene. However, the details also have to be compressed in order to fit in the image. This creates a trade-off between the amount of the scene captured and the detail level of each part. This can to some degree be countered by increasing the resolution. Doing this will however increase the computational complexity required to process the images.
-
-\subsection{pinhole projection}
+\subsection{pinhole projection} \label{sec:pinhole}
 The pinhole model is based on the first camera, the Camera Obscura, made in 1568. It captures a scene by projecting straight light rays through a common focal point, and through a plane. The projection itself is made from where the light rays intersect the projection plane. The focal length, $f$, and the image plane size will then decide the field of view, $\theta_x$ and $\theta_y$, as shown in Figure~\ref{fig:pinhole}. 
 
 \begin{figure}
@@ -98,29 +96,205 @@ As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the si
 
 Since the light rays need to pass through the pinhole and onto the image plane, it is not possible to have a field of view larger than $180^\circ$. As seen in Equation~\eqref{eq:pinhole_matrix}, the projected object is also scaled by the distance to it, causing the points where the vertical field of view is $180^\circ$ to be singular. 
 
-In a digital camera, the image plane consists of a small light sensitive chip, called a CCD. To get additional light to hit this chip, in addition to increasing the field of view, lenses are used. Altering the shape of the lens will change the field of view, as well as the focal length. This helps capturing a larger scene, with more details, while being able to keep the image plane small at the same size. 
+In a digital camera, the image plane consists of a small chip with a discrete amount of light sensitive elements, or pixels. Defining a new pixel coordinate frame to consist of the image pixels, with the origin in the upper left corner, as shown in Figure~\ref{fig:rel_img_pixel}. Using $W$ and $H$ as the image width and height in pixels, the transformation from image coordinates to pixel coordinates will be as shown in Equation~\eqref{eq:pixel_transform}.
 
-\todo[inline]{Distortions, Tranform to pixel coordinates, lens figure}
+\begin{figure}[!htb]
+    \centering
+    \begin{tikzpicture}[scale = 1.0]
+    
+    \draw[thick, ->] (-0.5,0,0) -- (3.5,0,0) node[below right]{$x$};
+    \draw[thick, ->] (0,0.5,0) -- (0,-2.5,0) node[right]{$y$};
+    \draw[thick, ->] (-3.2,2,0) -- (-1.5,2,0) node[above left]{$u$};
+    \draw[thick, ->] (-3,2.2,0) -- (-3,0.5,0) node[above left]{$v$};
+    
+    \draw[] (-3,3,0) -- (3,3,0); \draw[] (-3,2.9,0) -- (-3,3.1,0); \draw[] (3,2.9,0) -- (3,3.1,0);
+    \draw[] (-3,2.5,0) -- (0,2.5,0); \draw[] (-3,2.4,0) -- (-3,2.6,0); \draw[] (0,2.4,0) -- (0,2.6,0);
+    \draw[] (-1.5,2.7,0) node{$u_0$};
+    \draw[] (0,3.3,0) node{$W$};
+    
+    \draw[] (-4,2,0) -- (-4,-2,0); \draw[] (-4.1,2,0) -- (-3.9,2,0); \draw[] (-4.1,-2,0) -- (-3.9,-2,0);
+    \draw[] (-3.5,2,0) -- (-3.5,0,0); \draw[] (-3.6,2,0) -- (-3.4,2,0); \draw[] (-3.6,0,0) -- (-3.4,0,0);
+    \draw[] (-3.75,1,0) node{$v_0$};
+    \draw[] (-4.3,0,0) node{$H$};
+    
+    \foreach \yline in {-2,-1.8,...,2} {
+        \draw[] (-3, \yline, 0) -- (3, \yline, 0);
+    } %end foreach
+    
+    \foreach \xline in {-3,-2.8,...,3} {
+        \draw[] (\xline, -2, 0) -- (\xline, 2, 0);
+    } %end foreach
+    
+    \end{tikzpicture}
+    
+    \caption{Relationship between pixel and image coordinates}
+    \label{fig:rel_img_pixel}
+\end{figure}
 
-% This tangential relationship makes it impossible to have a field of view of $180^\circ$. Since large fields of view in this case also means small focal lengths and a large $tan(\phi)$, you will also introduce increasing errors due to the precision in the calculations \todo{source}. On the camera side, the small focal length causes distortions to have greater effect\todo{source}. This effect can be seen in Figure \todo{insert Figure}, making the pinhole cameras badly suited for large fields of view.
+\begin{equation}
+    p^i = \begin{bmatrix}
+        u \\ v \\ 1
+    \end{bmatrix} = \begin{bmatrix}
+        \frac{W}{2x_{max}} & 0 & u_0 \\
+        0 & \frac{H}{2x_{max}} & v_0 \\
+        0 & 0 & 1
+    \end{bmatrix}\begin{bmatrix}
+        x \\ y \\ z
+    \end{bmatrix} = \begin{bmatrix}
+        \frac{W}{2x_{max}} & 0 & u_0 \\
+        0 & \frac{H}{2x_{max}} & v_0 \\
+        0 & 0 & 1
+    \end{bmatrix}\begin{bmatrix}
+        x \\ y \\ z
+    \end{bmatrix}
+    \label{eq:pixel_transform}
+\end{equation}
+
+\section{Distortions and wide angle pictures}
+
+Wide angle image capture usually refers to pictures taken with a field of view grater than $60^\circ$. Increasing the field of view lets the camera capture more of the scene. However, the details also have to be compressed in order to fit in the image. This creates a trade-off between the amount of the scene captured and the level of detail. Increasing the resolution will reduce the amount of detail lost, but doing so also increases the amount of computation time needed to process the images.
+
+As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to capture elements that are straight to the side or behind the camera. This singularity can also be seen in Figure~\ref{fig:wide_angle_pinhole_nolens}, where the image plane would need to be infinitely big to capture elements at 90 degrees from the center image. In order to reliably capture wide angle pictures, wide angle cameras take advantage of lens distortion. Figure~\ref{fig:wide_angle_pinhole_lens} shows how a lens may be utilized to capture a wide angle picture onto a smaller image plane. The downside of this method is that elements towards the edges of the picture become compressed, causing straight lines to appear curved in the image. This type of distortion is called barrel distortion. Lenses that create barrel distortion in all radial directions from the image center is called a fisheye lens, are used in many wide angle cameras.
+
+\begin{figure}[!htb]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.7]
+        \pgfmathsetmacro{\rvecimg}{2}
+        \pgfmathsetmacro{\rvecscene}{3}
+        
+        \draw[] (0,0,0) -- (95:\rvecscene); \draw[] (0,0,0) -- (85:\rvecscene); 
+        \draw[] (0,0,0) -- (-95:\rvecimg); \draw[] (0,0,0) -- (-85:\rvecimg);
+        \draw[] (95:0.8*\rvecscene) arc (95:85:0.8*\rvecscene); \draw[] (90:0.9*\rvecscene) node{$10^\circ$};
+        
+        \draw[] (0,0,0) -- (45:1.414*\rvecscene); \draw[] (0,0,0) -- (35:1.743*\rvecscene); 
+        \draw[] (0,0,0) -- (-135:1.414*\rvecimg); \draw[] (0,0,0) -- (-145:1.743*\rvecimg);
+        \draw[] (45:\rvecscene) arc (45:35:\rvecscene); \draw[] (40:1.1*\rvecscene) node{$10^\circ$};
+        
+        \draw[] (-4.5,-\rvecimg,0) -- (4.5,-\rvecimg,0);
+        \draw[] (3,-\rvecimg + 0.3,0) node[scale=0.8]{image};
+        
+        \draw[] (-4,-\rvecimg,0) -- (-4,0,0);
+        \draw[] (-4.2,0,0) -- (-3.8,0,0);
+        \draw[] (-3.8, -0.5*\rvecimg,0) node{$f$};
+        
+    \end{tikzpicture}
+    \caption{Without lens distortion}
+    \label{fig:wide_angle_pinhole_nolens}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \begin{tikzpicture}[scale=0.7]
+        \pgfmathsetmacro{\rvecimg}{2}
+        \pgfmathsetmacro{\rvecscene}{3}
+        
+        \draw[] (0,0,0) -- (95:\rvecscene); \draw[] (0,0,0) -- (85:\rvecscene); 
+        \draw[] (0,0,0) -- (-95:\rvecimg); \draw[] (0,0,0) -- (-85:\rvecimg);
+        \draw[] (95:0.8*\rvecscene) arc (95:85:0.8*\rvecscene); \draw[] (90:0.9*\rvecscene) node{$10^\circ$};
+        
+        \draw[] (0,0,0) -- (45:1.414*\rvecscene); \draw[] (0,0,0) -- (35:1.743*\rvecscene); 
+        \draw[] (0,0,0) -- (-110:1.064*\rvecimg); \draw[] (0,0,0) -- (-120:1.155*\rvecimg);
+        \draw[] (45:\rvecscene) arc (45:35:\rvecscene); \draw[] (40:1.1*\rvecscene) node{$10^\circ$};
+        
+        \draw[] (-2,-\rvecimg,0) -- (2,-\rvecimg,0);
+        \draw[] (1.5,-\rvecimg + 0.3,0) node[scale=0.8]{image};
+        
+        \draw[] (-1.7,-\rvecimg,0) -- (-1.7,0,0);
+        \draw[] (-1.9,0,0) -- (-1.5,0,0);
+        \draw[] (-1.5, -0.5*\rvecimg,0) node{$f$};
+        
+    \end{tikzpicture}
+    \caption{With lens distortion}
+    \label{fig:wide_angle_pinhole_lens}
+    \end{subfigure}
+    
+    \caption{Amount of image space for different parts of the scene, using a pinhole camera, with and without a camera lens}
+    \label{fig:wide_angle_pinhole}
+    
+\end{figure}
 
 \subsection{Fisheye projection}
 
-To solve the problem the pinhole camera has with large fields of view, the fisheye lens projects the image onto a spherical image plane, where the radial distance to this plane is modelled based on the lens type used \todo{source}. This curvature of the image plane makes it easier to describe the image plane in spherical coordinates. The relationship between the image coordinates $p = [\theta,\phi]$ and the world coordinates $P = [X,Y,Z]$ then becomes:
+The lens distortion of a fisheye lens can be visualized and modeled as projecting the scene onto a sphere. This makes it is easier to describe points in the image plane as spherical coordinates, $P = [X,Y,Z]^\top = [1, \theta,\phi]$. A unit sphere is used to simplify the computations. The half sphere is then projected onto a  Figure~\ref{fig:fisheye_spherical_projection} visualizes the image plane of a fisheye lens, with the red lines representing constant $\phi$. The relationship between the image coordinates $p = [x,y]^\top = [r(\phi),\theta]^\top$ and the world coordinates is shown in Equation~\eqref{eq:fisheye_to_image}.
 
-\begin{subequations}
-\begin{equation}
-   \theta = arctan\left(\frac{Y}{X}\right)
-    \label{eq:fisheye_theta}
-\end{equation}
-\begin{equation}
-    \phi = arccos\left(\frac{Z}{R}\right) = arccos\left(\frac{Z}{\sqrt{X^2+Y^2+Z^2}}\right)
-    \label{eq:fisheye_phi}
-\end{equation}
-\label{eq:fisheye}
-\end{subequations}
+\begin{align}
+    r(\phi) &= f \cdot \phi & \theta &= \theta \nonumber \\
+    x &= rcos(\theta) & y &= rsin(\theta)
+    \label{eq:fisheye_to_image}
+\end{align}
 
-Equation \eqref{eq:fisheye} shows that the projection onto a spherical plane removes the singularities seen in Equation \eqref{eq:pinhole_relation}. However, the spherical projection will also introduce severe radial distortion, making straight lines curve in the picture \todo{figure}. Features towards the edges of the field of view will also be compressed heavily. This will cause information to be lost \todo{source}. 
+\begin{figure}[!htb]
+    \centering
+    \tdplotsetmaincoords{70}{160}
+    \begin{tikzpicture}[tdplot_main_coords, scale = 1.4]
+    
+    \coordinate (O) at (0,0,0);
+    \tdplotsetrotatedcoords{0}{-90}{90}
+    \draw[tdplot_rotated_coords, ->] (-0.5,0,0) -- (6,0,0) node[below right]{$X$};
+    \draw[tdplot_rotated_coords, ->] (0,-0.5,0) -- (0,2.5,0) node[right]{$Y$};
+    \draw[tdplot_rotated_coords, dashed] (0,0,-2.5) -- (0,0,6);
+    \draw[tdplot_rotated_coords, ->] (0,0,6) -- (0,0,8) node[below]{$z,Z$};
+    
+    %\tdplotsetcoord{}{}{}{}
+    
+    \tdplotsetcoord{P}{6}{65}{150}
+    \draw[] (P) node[above right]{P}; \node at (P){\textbullet};
+    \draw[] (O) -- (P);
+    
+    \tdplotsetcoord{ROTORIG}{7}{90}{180}
+    \tdplotsetrotatedcoordsorigin{(ROTORIG)}
+    \draw[tdplot_rotated_coords, ->] (180:0.3) arc (180:360:0.3);
+    \draw[tdplot_rotated_coords] (0,-0.5,0) node{$\theta$};
+    
+    \tdplotsetcoord{IMGC}{2}{90}{0}
+    \tdplotsetrotatedcoordsorigin{(IMGC)}
+    \foreach \x in {-2,-1.5,...,2} {
+        \draw[tdplot_rotated_coords] (\x,-2) -- (\x,2);
+    }
+    \foreach \y in {-2,-1.5,...,2} {
+        \draw[tdplot_rotated_coords] (-2,\y) -- (2,\y);
+    }
+    \foreach \phi in {10,20,...,80} {
+        \draw[tdplot_rotated_coords, color=red, opacity = 0.8] (0,0) circle({\phi/45});
+    }
+    \draw[tdplot_rotated_coords, thick, opacity = 0.8] (0,0) circle(2);
+    
+    \draw[tdplot_rotated_coords, ->] (-0.5,0,0) -- (4,0,0) node[below right]{$x$};
+    \draw[tdplot_rotated_coords, ->] (0,-0.5,0) -- (0,2.5,0) node[right]{$y$};
+    \draw[tdplot_rotated_coords, ->] (-2.5,-2,0) -- (2,-2,0) node[below right]{$u$};
+    \draw[tdplot_rotated_coords, ->] (-2,-2.2,0) -- (-2,2,0) node[below]{$v$};
+    
+    \draw[tdplot_rotated_coords] (0,-2.3,0) -- (0,-2.3,2);
+    \draw[tdplot_rotated_coords] (0,-2.2,0) -- (0,-2.4,0); \draw[tdplot_rotated_coords] (0,-2.2,2) -- (0,-2.4,2);
+    \draw[tdplot_rotated_coords] (0,-2.5,1) node{$f$};
+    
+    \tdplotsetrotatedcoordsorigin{(O)}
+    \draw[thick, tdplot_rotated_coords] (0:2) arc (0:360:2); 
+    \foreach \angle in {-90,-95,...,-270} {
+        \tdplotsetrotatedcoords{90}{\angle}{0}
+        \draw[tdplot_rotated_coords, opacity = 0.7] (0:2) arc (0:180:2);
+        
+    }
+    
+    \foreach \angle in {10,20,...,80} {
+        \coordinate (TMP) at ({-2*cos(\angle)},0,0);
+        \tdplotsetrotatedcoordsorigin{(TMP)}
+        \draw[tdplot_rotated_coords, color = red] (0:{2*sin(\angle)}) arc (0:360:{2*sin(\angle)});
+    }
+    
+    \tdplotsetrotatedcoords{90}{-43}{0}
+    \draw[tdplot_rotated_coords, ->] (90:5) arc (90:52:5);
+    \draw[tdplot_rotated_coords] (70:5.3) node{$\phi$};
+    
+    \end{tikzpicture}
+    
+    \caption{Equidistant fisheye lens projection}
+    \label{fig:fisheye_spherical_projection}
+\end{figure}
+
+In Figure~\ref{fig:fisheye_spherical_projection} we see the fisheye lens modeled as with a constant radius $r$....
+\todo[inline]{talk about other fisheye models and distortion effects}
 
 \subsection{Cylindrical projection}
 
@@ -177,7 +351,9 @@ Since 1986 much research has gone into improving the rendering time of these ima
 
 Nvidia recently developed their RTX-series of graphics cards \cite{raytraceblog}, promising to revolutionize the ways shadows, reflections and lighting are shown in real-time image processing, with the use of ray tracing. Based on their launch event presentation \cite{NvidiaConference}, this will be realized by; the integration of ray tracing cores, a locally developed ray tracing acceleration algorithm and deep learning. The ray tracing cores are are specialized processing units, designed to parallelize ray tracing calculations, while the ray tracing acceleration refers to a search algorithm for finding intersections between light rays and objects. Lastly the deep learning portion uses a previously trained deep learning network, made specifically to upscale and fill in the gaps of lower quality images, with the goal of reducing the amount of rays needed to be calculated, as well as to perform anti-aliasing tasks.
 
-\subsection{The graphical pipeline}
+\subsection{Real time graphics rendering}
+
+Since ray tracing hasn't been viable for real-time rendering until recently, most game engines and real time simulators utilizes rasterization instead of ray tracing. 
 
 In order to decide which objects to capture in the image, most rendering techniques involve a process called clipping or culling, depending on the source. This process consists of selecting which objects are in the field of view, how the objects should be oriented in the image, and which objects that are hidden, or partially hidden. 
 
