@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5.0)
 project(ros_api)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -10,40 +9,20 @@ project(ros_api)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
+  genmsg
 )
+
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../cmake_modules") 
+INCLUDE("${CMAKE_CURRENT_LIST_DIR}/../cmake_modules/CommonSetup.cmake")
+
+CommonSetup()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
-
-## To declare and build messages, services or actions from within this
-## package, follow these steps:
-## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
-##     but can be declared for certainty nonetheless:
-##     * add a exec_depend tag for "message_runtime"
-## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
@@ -67,10 +46,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+	DEPENDENCIES
+	std_msgs  # Or other packages containing msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -112,17 +91,24 @@ catkin_package(
 ## Build ##
 ###########
 
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
 include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
+	${FISHEYECAPTURE_ROOT}/AirLib/deps/eigen3
+	${FISHEYECAPTURE_ROOT}/AirLib/
+	${FISHEYECAPTURE_ROOT}/AirLib/include
+	${RPC_LIB_INCLUDES}
+	${catkin_INCLUDE_DIRS}
 )
 
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/ros_api.cpp
-# )
+file(GLOB_RECURSE ${PROJECT_NAME}_sources 
+  ${FISHEYECAPTURE_ROOT}/${PROJECT_NAME}/src/api/*.cpp
+  ${FISHEYECAPTURE_ROOT}/${PROJECT_NAME}/src/common/common_utils/*.cpp
+  ${FISHEYECAPTURE_ROOT}/${PROJECT_NAME}/src/safety/*.cpp
+  ${FISHEYECAPTURE_ROOT}/${PROJECT_NAME}/src/vehicles/car/api/*.cpp
+  ${FISHEYECAPTURE_ROOT}/${PROJECT_NAME}/src/vehicles/multirotor/*.cpp
+  ${FISHEYECAPTURE_ROOT}/${PROJECT_NAME}/src/vehicles/multirotor/api/*.cpp
+)
+
+add_library(${PROJECT_NAME}_lib STATIC ${${PROJECT_NAME}_sources})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -132,7 +118,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/ros_api_node.cpp)
+add_executable(${PROJECT_NAME} src/ros_api.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -142,12 +128,13 @@ include_directories(
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_lib ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${PROJECT_NAME}_lib ${RPC_LIB})
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_lib)
 
 #############
 ## Install ##
