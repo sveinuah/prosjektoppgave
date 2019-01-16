@@ -14,32 +14,51 @@ STRICT_MODE_ON
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 
-#include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
+#include "ros_api.hpp"
 
-void connect(msr::airlib::MultirotorRpcLibClient& client) {
-	try {
-		client.confirmConnection();
+namespace msr { namespace airlib {
 
-		ROS_INFO("Connedted to multirotor simulation");
-	}
-	
-	catch (rpc::rpc_error&  e) {
+	RosRpcLibClient::RosRpcLibClient(const std::string& ip_address, uint16_t port, float timeout_sec) : RpcLibClientBase(ip_address, port, timeout_sec){}
+
+	RosRpcLibClient::~RosRpcLibClient() {}
+
+	void RosRpcLibClient::connectAndArm(const std::string& vehicle_name) {
+		try {
+			confirmConnection();
+			enableApiControl(true, vehicle_name);
+			armDisarm(true, vehicle_name);
+		}
+		catch (rpc::rpc_error&  e) {
         std::string msg = e.get_error().as<std::string>();
         std::cout << "Exception raised by the API, something went wrong." << std::endl << msg << std::endl;
+		}
+
+		ROS_INFO("Connected!");
 	}
-}
+
+	void RosRpcLibClient::disconnectAndDisarm(const std::string& vehicle_name) {
+		try {
+			armDisarm(false, vehicle_name);
+			enableApiControl(false, vehicle_name);
+		}
+		catch (rpc::rpc_error&  e) {
+        std::string msg = e.get_error().as<std::string>();
+        std::cout << "Exception raised by the API, something went wrong." << std::endl << msg << std::endl;
+		}
+
+		ROS_INFO("Disconnected!");
+	}
+}} //namespace msr::airsim
 
 void screenLoggerCallback(const std_msgs::String::ConstPtr& msg) {
 	ROS_INFO("Got: [%s]", msg->data.c_str());
 	std::cout << "Woah! Melding!" << std::endl;
 }
 
-
-
 int main(int argc, char* argv[]) {
 
-	msr::airlib::MultirotorRpcLibClient client;
-	connect(client);
+	msr::airlib::RosRpcLibClient c;
+	c.connectAndArm();
 
 	ROS_INFO("Starting Multirotor node!");
 	
@@ -49,7 +68,9 @@ int main(int argc, char* argv[]) {
 	ros::Subscriber sub = n.subscribe("test_msg", 1000, screenLoggerCallback);
 
 	ros::spin();
-	std::cout << "hei" << std::endl;
+	
+	c.disconnectAndDisarm();
+
 	return 0;
 }
 

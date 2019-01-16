@@ -83,6 +83,7 @@ include_directories(
     ${AirLib_dir}/deps/rpclib/include
 	${AirLib_dir}/include
     ${RPCLIB_INCLUDES}
+    ${PROJECT_SOURCE_DIR}/include
 	${catkin_INCLUDE_DIRS}
 )
 
