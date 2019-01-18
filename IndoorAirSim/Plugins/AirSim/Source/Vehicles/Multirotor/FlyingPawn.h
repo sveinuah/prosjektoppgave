@@ -40,15 +40,11 @@ public:
 private: //variables
     //Unreal components
     static constexpr size_t rotor_count = 4;
-    UPROPERTY() APIPCamera* camera_front_left_;
-    UPROPERTY() APIPCamera* camera_front_right_;
-    UPROPERTY() APIPCamera* camera_front_center_;
-    UPROPERTY() APIPCamera* camera_back_center_;
-    UPROPERTY() APIPCamera* camera_bottom_center_;
-	UPROPERTY() APIPCamera* camera_right_front_;
-	UPROPERTY() APIPCamera* camera_left_front_;
-	UPROPERTY() APIPCamera* camera_right_back_;
-	UPROPERTY() APIPCamera* camera_left_back_;
+    UPROPERTY() APIPCamera* camera_forward_center_;
+    UPROPERTY() APIPCamera* camera_backward_center_;
+    UPROPERTY() APIPCamera* camera_down_center_;
+	UPROPERTY() APIPCamera* camera_right_center_;
+	UPROPERTY() APIPCamera* camera_left_center_;
 
     UPROPERTY() URotatingMovementComponent* rotating_movements_[rotor_count];
 
