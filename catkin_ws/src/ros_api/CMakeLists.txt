@@ -64,9 +64,12 @@ find_package(catkin REQUIRED COMPONENTS
     rospy
     std_msgs
     genmsg
+    OpenCV
 )
 
 find_package(Threads REQUIRED)
+
+message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
 
 generate_messages(
    DEPENDENCIES
@@ -103,9 +106,11 @@ add_executable(
 target_link_libraries(
     ${PROJECT_NAME}
     ${catkin_LIBRARIES}
+    ${OpenCV_LIBS}
     AirLib
     rpc
     pthread
+    cv_bridge
 )
 
 add_dependencies(

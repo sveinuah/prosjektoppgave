@@ -2,6 +2,8 @@
 #define ros_api_hpp
 
 #include <string>
+
+#include "common/CommonStructs.hpp"
 #include "api/RpcLibClientBase.hpp"
 
 namespace msr { namespace airlib {
@@ -14,6 +16,8 @@ namespace msr { namespace airlib {
 
 		void connectAndArm(const std::string& vehicle_name = "");
 		void disconnectAndDisarm(const std::string& vehicle_name = "");
+
+		std::vector<ImageCaptureBase::ImageResponse> simGetPerspectiveImages(std::vector<ImageCaptureBase::ImageRequest> req, const std::string& vehicle_name);
 
 };
 
