@@ -110,7 +110,7 @@ target_link_libraries(
     AirLib
     rpc
     pthread
-    cv_bridge
+    cv_bridge #This must be recompiled from source for curent version of ROS
 )
 
 add_dependencies(
