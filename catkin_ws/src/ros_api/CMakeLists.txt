@@ -39,6 +39,7 @@ if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
         -nostdinc++ -ferror-limit=10 -isystem ${LIBCXX_INC_PATH} \
         -D__CLANG__ ${CMAKE_CXX_FLAGS}")
 
+    # Need to link additional libraries with Clang to set up LLVM libc++
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \
         -stdlib=libc++ -lc++ -lc++abi -lm -lc \
         -L ${LIBCXX_LIB_PATH} -rpath ${LIBCXX_LIB_PATH}")
