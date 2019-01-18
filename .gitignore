@@ -1,4 +1,5 @@
 AirLib/
+catkin_ws/src/cv_bridge/
 devel/
 logs/
 build/
