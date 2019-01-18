@@ -84,10 +84,12 @@ int main(int argc, char* argv[]) {
 
 
 	ros::Rate loop_rate(5);
+
+	constexpr int count = 0;
 	while(ros::ok()) {
 
 		cv_bridge::CvImage cv_img;
-		cv_img.image = cv::imread("/home/schwung/testbilde.jpg", cv::IMREAD_COLOR);
+		cv_img.image = cv::imread("/home/schwung/bilde.jpg", cv::IMREAD_UNCHANGED);
 		cv_img.encoding = "bgr8";
 
 		sensor_msgs::Image ros_img;
@@ -96,6 +98,7 @@ int main(int argc, char* argv[]) {
 		pub.publish(ros_img);
 
 		ros::spinOnce();
+		loop_rate.sleep();
 	}
 	
 	c.disconnectAndDisarm();
