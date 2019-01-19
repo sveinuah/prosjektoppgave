@@ -21,6 +21,9 @@ STRICT_MODE_ON
 
 #include "ros_api.hpp"
 #include "api/RpcLibAdapatorsBase.hpp"
+#include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
+#include "ImageCaptureCube.hpp"
+#include "fisheye.hpp"
 
 namespace msr { namespace airlib {
 
@@ -28,6 +31,7 @@ namespace msr { namespace airlib {
 	typedef ImageCaptureBase::ImageRequest ImageRequest;
 	typedef ImageCaptureBase::ImageResponse ImageResponse;
 	typedef msr::airlib_rpclib::RpcLibAdapatorsBase RpcLibAdapatorsBase;
+	typedef Eigen::Matrix<float, 4, 4> ProjMat;
 	// **********************************************
 
 	RosRpcLibClient::RosRpcLibClient(const std::string& ip_address, uint16_t port, float timeout_sec) : RpcLibClientBase(ip_address, port, timeout_sec) {
@@ -63,6 +67,8 @@ namespace msr { namespace airlib {
 		ROS_INFO("Disconnected!");
 	}
 
+// ******************** Fisheye realted stuff **********************************
+
 }} //namespace msr::airlib
 
 void screenLoggerCallback(const std_msgs::String::ConstPtr& msg) {
@@ -72,8 +78,58 @@ void screenLoggerCallback(const std_msgs::String::ConstPtr& msg) {
 
 int main(int argc, char* argv[]) {
 
-	msr::airlib::RosRpcLibClient c;
+	using namespace msr::airlib;
+
+	RosRpcLibClient c;
+	MultirotorRpcLibClient client;
 	c.connectAndArm();
+	client.confirmConnection();
+	client.enableApiControl(true);
+	client.armDisarm(true);
+
+	client.takeoffAsync();
+	client.hoverAsync()->waitOnLastTask();
+
+	ImageCaptureCube::CubeImageRequest req;
+
+	// TESTING ********************************************
+	
+	char x;
+	std::cout << "Press key!" << std:: endl; std::cin >> x;
+
+	std::vector<FisheyeTransformer::SourceImage> images;
+
+	const vector<ImageResponse>& responses = c.simGetImages(req.capture_requests);
+	for (auto response : responses) {
+
+		cv::Mat temp_img(response.height, response.width, CV_8UC4);
+
+		int it = 0;
+		int i, j = 0;
+		for (auto& data : response.image_data_uint8) {
+			i = (it/4)%response.width;
+			j = (it/4)/response.width;
+
+			temp_img.at<uchar>(i,j);
+			it++;
+		}
+
+		VectorMathf::Pose p(response.camera_position, response.camera_orientation);
+		FisheyeTransformer::SourceImage img(temp_img, p, response.height, response.width);
+
+		images.push_back(img);
+	}
+
+	Eigen::Matrix<float, 4, 4> proj = Eigen::Matrix<float, 4, 4>::Identity();
+	FisheyeTransformer::TransformRequest request(images, proj);
+	FisheyeTransformer fish(640, 640);
+	cv::Mat output = fish.transformAndCombine(request);
+
+	cv::namedWindow("edges",1);
+	cv::imshow("edges", output);
+	cv::waitKey(0);
+
+	// UNTIL HERE !!! *************************************
 
 	ROS_INFO("Starting Multirotor node!");
 	
@@ -82,15 +138,16 @@ int main(int argc, char* argv[]) {
 	ros::Subscriber sub = n.subscribe("test_msg", 1000, screenLoggerCallback);
 	ros::Publisher pub = n.advertise<sensor_msgs::Image>("/FisheyeImages", 1);
 
-
 	ros::Rate loop_rate(5);
 
 	constexpr int count = 0;
 	while(ros::ok()) {
 
 		cv_bridge::CvImage cv_img;
-		cv_img.image = cv::imread("/home/schwung/bilde.jpg", cv::IMREAD_UNCHANGED);
-		cv_img.encoding = "bgr8";
+		
+
+
+		cv_img.encoding = "rgba8";
 
 		sensor_msgs::Image ros_img;
 		cv_img.toImageMsg(ros_img);

@@ -8,6 +8,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE} ${BUILD_TYPE}")
 
 SET(AirLib_dir ${PROJECT_ROOT}/AirLib)
 SET(catkin_dir ${PROJECT_ROOT}/catkin_ws)
+SET(fisheye_dir ${PROJECT_ROOT}/Fisheyecapture/FisheyeCaptureClient)
 SET(LLVM_DIR ${PROJECT_ROOT}/llvm-build)
 SET(RPCLIB_INCLUDES ${PROJECT_ROOT}/external/rpclib/rpclib-2.2.1)
 
@@ -86,6 +87,7 @@ include_directories(
 	${AirLib_dir}/deps/eigen3
     ${AirLib_dir}/deps/rpclib/include
 	${AirLib_dir}/include
+    ${fisheye_dir}/include
     ${RPCLIB_INCLUDES}
     ${PROJECT_SOURCE_DIR}/include
 	${catkin_INCLUDE_DIRS}
@@ -100,6 +102,7 @@ link_directories(
 add_executable(
     ${PROJECT_NAME}
     src/ros_api.cpp
+    ${fisheye_dir}/src/fisheye.cpp
 )
 
 ## Specify libraries to link a library or executable target against
