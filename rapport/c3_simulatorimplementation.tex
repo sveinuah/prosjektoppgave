@@ -1,35 +1,12 @@
 \section{System overview}
 
-\subsection{Project setup and programming environment}
+The project will be set up as three main modules: Unreal Engine, AirSim and the fisheye camera. These are all compilable as their own packages, and does not need to be compiled in any specific order. Only Unreal Engine is executable on its own. AirSim is indirectly run by AirSim through adding the plugin to a specific unreal project, while the AirSim enabled project needs to be running within Unreal Engine in order to run or use the fisheye module. 
 
-In this project I have forked both the EpicGames/Unreal Engine and the Microsoft/AirSim repository to my Github account, and made my own pivate repository for the project. This enable me to do specific changes to the source code of these projects, without the need to make pull requests to their original repositories. While AirSim is openly available, the source code of Unreal Engine is only available after being registered as a developer through their website. One requirement for getting the source code is that it is not distributed outside of this licencing. For this reason neither the fork of Unreal Engine, nor my own project repository are publicly available.
+The AirSim plugin is made in a way, so that it technically resides outside of Unreal Engine. However it has full access to the resources of the Engine, through the engine's header files. Their design choice involves adding as much functionallity as possible, outside of the Engine, to make it easier to support other game engines, with only small changes to the AirSim package. The added features in the AirSim package includes: Multirotor and car models, perspective and depth camera, Lidar, IMU with magnetometer and GPS. In addition to this it supports HITL through the PX4 flight controller and MAVlink. 
 
-Since one of the main goals of this project is the interfacing to ROS, the main OS for development will be Linux, specifically Ubuntu 18.04. However, since Unreal Engine is deeply integrated with Visual Studios, I will use Visual Studios on Windows as the main debugging platform, for everything except ROS. To build on Linux, I will use CMake, as they have done with AirSim. Both Unreal Engine and AirSim is built with the clang compiler, using libc++ as the standard library. However, the default ROS install uses libstdc++ as their standard library. This caused linking problems when combining ROS and AirSim. I therefore had to make some changes to the build and CMake scripts of AirSim in order to build with the GNU compiler g++, using libstdc++ as the standard library.
-
-\todo[inline]{Do I need to describe why this change is important?}
+As of now, AirSim is only usable with version 4.18 of Unreal Engine, while 4.21 is available at the time of writing. In order to reduce the chances of new commits to the original repositories causing problems for my project. Both AirSim and Unreal Engine4.18 have been forked to my own github. This allows me to control when to add the updates to the original projects, while enabling me to alter the packages as I choose. As of now Unreal Engine, and the project are made private due to licencing. However, my own alterations to AirSim are available publicly.
 
 \subsection{Communication pattern}
-
-Airsim is made as a plugin to Unreal Engine. This means that its contributions resides technically resides outside Unreal Engine. However it has full access to the resources of the Engine, through the engine's header files. Their design choice involves adding as much functionallity as possible, outside of the Engine, to make it easier to support other game engines, with only small changes to the AirSim package. The added features in the AirSim package includes:
-
-\begin{itemize}
-    \itemsep 0em
-    \item Multirotor and Car models
-    \item Custom physics engine for Multirotor and Car
-    \item Sensor models for:
-    \begin{itemize}
-    \itemsep -0.2em
-        \item Perspective and depth camera
-        \item Lidar
-        \item IMU + magnetometer
-        \item GPS
-    \end{itemize}
-    \item HITL with the PX4 flight controller
-    \item MAV-link support
-    \item Remote controller/steering wheel support
-    \item Custom computer vision mode
-    \item C++ and Python interface through RPC (client/server)
-\end{itemize}
 
 Because of the design choices of AirSim, much of the simulator computations happen outside of Unreal Engine. While Unreal Engine handles the core game loop, resource management and the graphical tasks, custom AirSim scripts handle sensor simulation and kinematics. Of course, AirSim also relies on Unreal Engine for camera data, actor positions and pose, in addition to timing data. The AirSim plugin implements a game mode, which is run by Unreal Engine on simulation start. This decides whether to do a multirotor simulation, car simulation or computer vision mode. The computer vision mode turns off physics, enabling free camera movement for creating datasets. The game mode also sets up the program loop run for each actor each frame.
 
@@ -386,6 +363,8 @@ The ROS interface is split into two different parts: The first part handles AirS
 
 Using the custom setup discussed in Section~\ref{subsec:Fisheye_impl_overview}, the requests for the perspective images are treated by referencing the cameras by name. As of this moment, I have not found a better way to do this, as the AirSim API does not implement polling for available cameras. The received vector of images is then converted to OpenCV images and wrapped into a custom FisheyeImageRequest made for this project. This structure holds the images, image size, and information about the camera pose, which is necessary to compute the final image.
 
+The created ROS node runs an infinite loop, shown in Figure~\ref{fig:impl_ROS_pub_loop}. The loop is interruptable by crtl+c through the ros::ok() function. The loop consists of polling for images, conversion to fisheye image, and publishing the image on the FisheyImage ROS topic. The complete implementation of the ROS interface is unfortunately not finished, meaning that in order to control the multirotor, the old client API needs to be included and used in the client application. Both the ROS publisher and the old client API can be run simultaneously.
+
 \begin{figure}[!htb]
     \centering
     \begin{tikzpicture}[node distance=2cm, transform shape, scale=0.7]
@@ -426,10 +405,6 @@ Using the custom setup discussed in Section~\ref{subsec:Fisheye_impl_overview}, 
     \caption{ROS publisher loop}
     \label{fig:impl_ROS_pub_loop}
 \end{figure}
-
-The created ROS node runs an infinite loop, shown in Figure~\ref{fig:impl_ROS_pub_loop}. The loop is interruptable by crtl+c through the ros::ok() function. The loop consists of polling for images, conversion to fisheye image, and publishing the image on the FisheyImage ROS topic. The complete implementation of the ROS interface is unfortunately not finished, meaning that in order to control the multirotor, the old client API needs to be included and used in the client application. Both the ROS publisher and the old client API can be run simultaneously.
-
-
 
 
 
