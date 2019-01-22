@@ -7,7 +7,7 @@ Since all cameras project a 3D scene onto a 2D plane, there will be information 
 \subsection{pinhole projection} \label{sec:pinhole}
 The pinhole model is based on the first camera, the Camera Obscura, made in 1568. It captures a scene by projecting straight light rays through a common focal point, and through a plane. The projection itself is made from where the light rays intersect the projection plane. The focal length, $f$, and the image plane size will then decide the field of view, $\theta_x$ and $\theta_y$, as shown in Figure~\ref{fig:pinhole}. 
 
-\begin{figure}
+\begin{figure}[!htb]
     \centering
 
     \tdplotsetmaincoords{80}{145}
@@ -73,7 +73,7 @@ The pinhole model is based on the first camera, the Camera Obscura, made in 1568
 Using the properties of similar triangles, the relationship between the World coordinates, $X,Y,Z$ and the image coordinates $x,y$ becomes:
 
 \begin{align}
-    tan(\phi_x) &= \frac{x}{f} = \frac{X}{Z} & tan(\phi_y) &= \frac{y}{f} = \frac{Y}{Z} \\
+    tan(\phi_x) &= \frac{x}{f} = \frac{X}{Z} & tan(\phi_y) &= \frac{y}{f} = \frac{Y}{Z} \label{eq:pinhole_tan_relation} \\
     x &= f\frac{X}{Z} & y &=f\frac{Y}{Z}
     \label{eq:pinhole_relation}
 \end{align}
@@ -136,16 +136,15 @@ In a digital camera, the image plane consists of a small chip with a discrete am
         u \\ v \\ 1
     \end{bmatrix} = \begin{bmatrix}
         \frac{W}{2x_{max}} & 0 & u_0 \\
-        0 & \frac{H}{2x_{max}} & v_0 \\
+        0 & \frac{H}{2y_{max}} & v_0 \\
         0 & 0 & 1
-    \end{bmatrix}\begin{bmatrix}
-        x \\ y \\ z
-    \end{bmatrix} = \begin{bmatrix}
+    \end{bmatrix}p =
+    \begin{bmatrix}
         \frac{W}{2x_{max}} & 0 & u_0 \\
-        0 & \frac{H}{2x_{max}} & v_0 \\
+        0 & \frac{H}{2y_{max}} & v_0 \\
         0 & 0 & 1
     \end{bmatrix}\begin{bmatrix}
-        x \\ y \\ z
+        x \\ y \\ 1
     \end{bmatrix}
     \label{eq:pixel_transform}
 \end{equation}
@@ -216,7 +215,7 @@ As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to captu
 
 \subsection{Fisheye projection}
 
-The lens distortion of a fisheye lens can be visualized and modeled as projecting the scene onto a sphere. This makes it is easier to describe points in the image plane as spherical coordinates, $P = [X,Y,Z]^\top = [1, \theta,\phi]$. A unit sphere is used to simplify the computations. The half sphere is then projected onto a  Figure~\ref{fig:fisheye_spherical_projection} visualizes the image plane of a fisheye lens, with the red lines representing constant $\phi$. The relationship between the image coordinates $p = [x,y]^\top = [r(\phi),\theta]^\top$ and the world coordinates is shown in Equation~\eqref{eq:fisheye_to_image}.
+The lens distortion of a fisheye lens can be visualized and modeled as projecting the scene onto a sphere. This makes it is easier to describe points in the image plane as spherical coordinates, $P = [X,Y,Z]^\top = [1, \theta,\phi]$. A unit sphere is used to simplify the computations. The sphere is then projected onto a  Figure~\ref{fig:fisheye_spherical_projection} visualizes the image plane of a fisheye lens, with the red lines representing constant $\phi$. The relationship between the image coordinates $p = [x,y]^\top = [r(\phi),\theta]^\top$ and the world coordinates is shown in Equation~\eqref{eq:fisheye_to_image}.
 
 \begin{align}
     r(\phi) &= f \cdot \phi & \theta &= \theta \nonumber \\
@@ -235,8 +234,6 @@ The lens distortion of a fisheye lens can be visualized and modeled as projectin
     \draw[tdplot_rotated_coords, ->] (0,-0.5,0) -- (0,2.5,0) node[right]{$Y$};
     \draw[tdplot_rotated_coords, dashed] (0,0,-2.5) -- (0,0,6);
     \draw[tdplot_rotated_coords, ->] (0,0,6) -- (0,0,8) node[below]{$z,Z$};
-    
-    %\tdplotsetcoord{}{}{}{}
     
     \tdplotsetcoord{P}{6}{65}{150}
     \draw[] (P) node[above right]{P}; \node at (P){\textbullet};
@@ -289,11 +286,20 @@ The lens distortion of a fisheye lens can be visualized and modeled as projectin
     
     \end{tikzpicture}
     
-    \caption{Equidistant fisheye lens projection}
+    \caption{Equiangular fisheye lens projection. Focal length exagerated for visual purposes.}
     \label{fig:fisheye_spherical_projection}
 \end{figure}
 
-In Figure~\ref{fig:fisheye_spherical_projection} we see the fisheye lens modeled as with a constant radius $r$....
+As the spherical projection step makes it easier to handle the world coordinates as spherical coordinates. Using the relationship $X = Rsin(\phi)cos(\theta)$, $Y = Rsin(\phi)sin(\theta)$ and $Z = Rcos(\phi)$ the polar coordinates $R,\theta,\phi$ become:
+
+\begin{equation}
+    \begin{aligned}
+        R &= X^2 + Y^2 + Z^2 \\
+        \theta &= arctan\left(\frac{Y}{X}\right) \\
+        \phi &= arccos\left(\frac{Z}{sqrt{X^2 + Y^2 + Z^2}}\right)
+    \end{aligned}
+    \label{theory_polar_coords}
+\end{equation}
 \todo[inline]{talk about other fisheye models and distortion effects}
 
 \subsection{Cylindrical projection}
@@ -335,38 +341,90 @@ Since the pixel density varies within the field of view, the lens is more diffic
 
 \subsection{Merging multiple camera views}
 
-
-
 \section{Computer graphics}
 
-Our eyes and cameras capture the 3D world from light hitting photosensitive elements. An object directly or partly behind another object will therefore be hidden in the picture, unless captured by a reflection. In addition to this, shadows, colors and lighting of objects in the scene are all based on how the light rays bounce around in the room, and eventually hit the camera lens. In computer graphics, there is no inherent concept of light. This means that all the effects that are based around light must be estimated or simulated. 
+Our eyes and cameras capture the 3D world from light hitting photosensitive elements. An object directly or partly behind another object will therefore be hidden in the picture, unless captured by a reflection. In addition to this, shadows, colors and lighting of objects in the scene are all based on how the light rays bounce around in the room, and eventually hit the camera lens. In computer graphics, there is no inherent concept of light. This means that all the effects that are based around light must be estimated or simulated. Since calculating light and shadow effects are quite expensive computationally, it is not uncommon to add shadow elements directly to the object texture, in order to optimize the for speed.
 
-There are two main approaches to this: One approach is Ray tracing, which simulates light rays as they travel from the camera center, through a pixel and to the light source. Based on the intersection with objects and the properties of the object itself, reflected rays and shadow rays will be traced, to find the elements to be captured in the pixel. The other approach is called Rasterization. Rasterization splits each object into basic shapes and iterates over each, projecting them onto the image. This step does however not account for hidden shapes, requiring additional visibility chacks through face culling and z-buffering. 
+There are two main approaches: One approach is Ray tracing, which simulates light rays as they travel in straight lines from the camera center, through a pixel. When a ray hits an object, the ray is split in two, creating a shadow ray following the same trajectory through the object, and a reflection ray following the reflection trajectory. Ultimately these rays will find a light source, leave the scene. Usually the rays are limited to a number of bounces, to save some computation. This technique is incredibly powerful, and is used heavily in CGI effects for film making. However, the amount of computation necessary makes it hard to incorporate this in real-time applications.
 
-\subsection{Ray Tracing}
+The other approach is often referred to as rasterization, and is the one used most in real-time applications. Rasterization is a actually only a step in a larger pipeline of graphics computations, and comes after the clipping and culling stages, deciding which parts of each object that are visible. The task of rasterization is choosing which visible object to show in each pixel. The main advantage Razterization has is it's short computation time and ability to be parallelized. The downside is that it captures much less information about the lighting, providing the shader much less information for the final coloring.
 
-Ray tracing techniques have existed as a fully developed technique since 1986 \cite{raytraceblog}. Today, Ray tracing is highly used in film making for CGI, which is Computer-generated imagery to be applied on its own, or in the same frame as actual camera footage. The inherent ability ray tracing has to mimic real world light, enables the algorithms to produce very realistic images. The downside is that tracing light rays, all their reflections, refractions and shadows they cast, is really computationally expensive.
+\subsection{Graphics projection}
 
-Since 1986 much research has gone into improving the rendering time of these images. \cite{wald2009state} summarizes many of these, but also shows the conflicts between ray tracing approaches for video games, and approaches for movie making. The article states that the movie making approach is centered around making data structures for efficient computation, while more or less ignoring the building time of these structures. This can be backed up by Section 3 of \cite{carsmovie}, where the main focus is shown to be memory management and quality. In real time applications however, these data structures needs to be built and rebuilt, in addition to the computation, in real time. 
+One of the main difficulties in graphics programming is deciding which objects are visible. In simple terms, this consists of two tasks: Clipping, or deciding what os outside the FoV, and Culling, which decides which objects in the line of sight, that are cosest to the viewer. In order to simplify computations, the visible scene is projected into a cube of a known size. This is usually the cube consisting of the points $x, y, z \in [-1,1]$, or $x,y \in [-1,1], z \in [0,1]$. however, both the cube size and the placement may differ from renderer to renderer. This means that the term projection in computer graphics, refer to a tranformation from $\mathbb{R}^3 \rightarrow \mathbb{R}^3$ while camera projections refer to a direct transformation to the image plane, from $\mathbb{R}^3 \rightarrow \mathbb{R}^2$.
 
-Nvidia recently developed their RTX-series of graphics cards \cite{raytraceblog}, promising to revolutionize the ways shadows, reflections and lighting are shown in real-time image processing, with the use of ray tracing. Based on their launch event presentation \cite{NvidiaConference}, this will be realized by; the integration of ray tracing cores, a locally developed ray tracing acceleration algorithm and deep learning. The ray tracing cores are are specialized processing units, designed to parallelize ray tracing calculations, while the ray tracing acceleration refers to a search algorithm for finding intersections between light rays and objects. Lastly the deep learning portion uses a previously trained deep learning network, made specifically to upscale and fill in the gaps of lower quality images, with the goal of reducing the amount of rays needed to be calculated, as well as to perform anti-aliasing tasks.
+There are two main projection types used: orthographic and perspective. Orthographic projection is specially made to keep the scale of the object independent on how far away it is from the camera. This makes it ideal for schematics and other computer aided design, where the size of the drawing must be proportional to the real size of the object. The other type is perspective projection, and will be the one which is relevant for this project.
 
-\subsection{Real time graphics rendering}
+\subsection{Perspective projection}
 
-Since ray tracing hasn't been viable for real-time rendering until recently, most game engines and real time simulators utilizes rasterization instead of ray tracing. 
+As seen in Figure~\ref{fig:perspective_projection}, perspective projection has a lot in common with the pinhole projection, as the scaling of objets seen in Equation~\eqref{eq:pinhole_tan_relation} also holds for perspective projection, preserving the depth of the picture. The difference comes from the addition of a near and a far clipping plane. Which limits the visible scene to a confined space, and limits the amount of computations needed. Figure~\ref{fig:perspective_proj_yz} shows the yz-view of a perspective projection. Here $a^*$ and $b^*$ are references to where point $a$ and $b$ will show in the projection, $\Theta$ is the FoV and $d_n$, $d_f$ are the distance to the near and far clipping plane.
 
-In order to decide which objects to capture in the image, most rendering techniques involve a process called clipping or culling, depending on the source. This process consists of selecting which objects are in the field of view, how the objects should be oriented in the image, and which objects that are hidden, or partially hidden. 
+\begin{figure}[!htb]
+    \centering
+        \begin{tikzpicture}[scale=1.0]
+            \coordinate (O) at (0,0,0);
+            \coordinate (OL) at (-7,0,0);
+            \coordinate (OH) at (4,0,0);
+        
+            \draw[dashed, ->] (-7.3,0) -- (-1,0) node[below right]{$Z$};
+            \draw[->] (-7,1.5) -- (-7,-1.5) node[above left]{$Y$};
+            
+            \draw[->] (1,0) -- (7.3,0) node[below right]{$z$};
+            \draw[->] (4,3) -- (4,-3) node[right]{$y$};
+            
+            \tdplotsetrotatedcoordsorigin{(OH)}
+            \draw[tdplot_rotated_coords] (-1.5,-1.5) -- (-1.5,1.5) node{\textbullet} node[below right]{$a^*$} -- (1.5,1.5) node{\textbullet} node[below right]{$b^*$}-- (1.5,-1.5) -- cycle;
+            
+            \draw[tdplot_rotated_coords] (1.5,0) node[below right]{\scriptsize $1$};
+            \draw[tdplot_rotated_coords] (0,-1.5) node[below right]{\scriptsize $1$};
+            \draw[tdplot_rotated_coords] (0,1.5) node[above right]{\scriptsize $-1$};
+            \draw[tdplot_rotated_coords] (-1.5,0) node[below left]{\scriptsize $-1$};
+        
+            \tdplotsetrotatedcoordsorigin{(OL)}
+            \draw[tdplot_rotated_coords, ->] (0,0) -- (15:5.5);
+            \draw[tdplot_rotated_coords, ->] (0,0) -- (-15:5.5);
+            
+            \draw[tdplot_rotated_coords] (1.5, {1.5*tan(-15)}) -- (1.5,{1.5*tan(15)});
+            \draw[tdplot_rotated_coords] (1.5, {1.5*tan(-15)}) -- (1.5,{1.5*tan(15)});
+            
+            \draw[tdplot_rotated_coords] (4, {4*tan(-15)}) -- (4,{4*tan(15)});
+            \draw[tdplot_rotated_coords] (4, {4*tan(-15)}) -- (4,{4*tan(15)});
+            
+            \draw[tdplot_rotated_coords] (15:2) arc (15:-15:2);
+            \draw[tdplot_rotated_coords] (2.2,0.2) node{$\Theta$};
+            
+            \draw[tdplot_rotated_coords] (1.5,{1.5*tan(15)}) node{\textbullet} node[above left]{$a$};
+            \draw[tdplot_rotated_coords] (4,{4*tan(15)}) node{\textbullet} node[above left]{$b$};
+            
+            \draw[tdplot_rotated_coords] (0,-1.8) -- node[midway, above]{$d_n$} ++(1.5,0);
+            \draw[tdplot_rotated_coords] (0,-1.9) -- (0,-1.7); \draw[tdplot_rotated_coords] (1.5,-1.9) -- (1.5,-1.7);
+            \draw[tdplot_rotated_coords] (0,-2.2) -- node[midway, above]{$d_f$} ++(4,0);
+            \draw[tdplot_rotated_coords] (0,-2.3) -- (0,-2.1); \draw[tdplot_rotated_coords] (4,-2.3) -- (4,-2.1);
+            
+        \end{tikzpicture}
+    \caption{yz-view of perspective projection, with $a^*,b^*$ being the projected version of $a,b$}
+    \label{fig:perspective_proj_yz}
+\end{figure}
 
-----------
+The height of the near clipping plane will always be $2$. This means that the vertical FoV $\Theta$ is directly linked to the distance $d_n$.  Using this information, as well as the tangential relationship from Equation~\eqref{eq:pinhole_tan_relation}, the projection of $Y$ can be deduced, as shown in Equation~\eqref{eq:perspective_y}. To describe the projection of $X$ we may use the aspect ratio to form a relationship between the horizontal and vertical FoV. Equation \eqref{eq:perspective_fov_relation} shows this, with the horizontal FoV denoted as $\Theta_H$. The projection of $X$ is shown in Equation~\eqref{eq:perspective_x}.
 
-Computer graphics differ from cameras in the sense that it is made to project the image to a screen, and the main focus is how this projection is viewed by the human eye. There are two main techniques used for this: Perspective projection and Orthographic projection. And both define three main parts:
-\begin{itemize}
-    \item A reference point with a view direction
-    \item A 3D object
-    \item A projection plane to hold the projection
-\end{itemize}
+\begin{equation}
+    Zy^* = \frac{Y}{tan\left(\frac{\Theta}{2}\right)} = Z \Rightarrow y^* = \frac{1}{tan\left(\frac{\Theta}{2}\right)}\frac{Y}{Z}
+    \label{eq:perspective_y}
+\end{equation}
 
-In addition to this there is usually defined two clipping planes defining the near and far end of the view distance. This means that objects closer to the reference point than the near clipping plane, and objects further away than the far clipping plane, will not be projected. Figure~\ref{fig:perspective_projection} shows this in a perspective projection. Here the near clipping plane is combined with the projection and referenced as the computer screen. However they may be disconnected, depending on what the projection should capture.
+\begin{subequations}
+\begin{equation}
+    tan\left(\frac{\Theta_H}{2}\right) = \frac{W}{H}tan\left(\frac{\Theta}{2}\right)
+    \label{eq:perspective_fov_relation}
+\end{equation}
+\begin{equation}
+    x^* = \frac{\rho}{tan\left(\frac{\Theta}{2}\right)}\frac{X}{Z} \quad , for \quad \rho = \frac{Width}{Height}
+    \label{eq:perspective_x}
+\end{equation}
+\label{eq:perspective_x_fovrel}
+\end{subequations}
+
 
 \begin{figure}[!htb]
     \centering
@@ -375,84 +433,61 @@ In addition to this there is usually defined two clipping planes defining the ne
     \label{fig:perspective_projection}
 \end{figure}
 
-\subsection{Perspective projection}
+While the projection of $X$ and $Y$ more or less are equal for most renderer implementations, the projection of $Z$ is highly dependent on the chosen target cube, as well as the orientation of the Z-axis. Using the homogenous scene coordinates $P = [X,Y,Z,1]^\top$ and $p* = [x,y,z,w]^\top$ the transformation can be written as shown in Equation~\eqref{eq:perspective_projmat_temp}. Here $w = Z$ to scale $X$ and $Y$, and needs to be taken into account when calculating the $Z$ projection. Since both clipping planes have the z-axis as a plane normal in both the original scene, as well as the projected cube, $z$ will be independent on $X$ and $Y$ simplifying the computation to the set of two equations shown in Equation~\eqref{eq:perspective_zeqs}.
 
-As seen in Figure~\ref{fig:perspective_projection}, perspective projection has a lot in common with the pinhole projection. This makes the projection carry a sense of depth in the image. Objects closer to the near clipping plane becomes larger, and objects further away becomes smaller. The focus point at the origin represents the human eye, and how it would perceive the projected world.
 
-To make the projection map to each pixel on a screen \todo[inline]{insert maths. need reference matrices}
+\begin{align}
+    p^* &= \begin{bmatrix}
+        x \\ y \\ z \\ w
+    \end{bmatrix} = \begin{bmatrix}
+        \frac{\rho}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 & 0 \\
+        0 & \frac{1}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 \\
+        0 & 0 & A & B \\
+        0 & 0 & 1 & 0
+    \end{bmatrix} \begin{bmatrix}
+        X \\ Y \\ Z \\ 1
+    \end{bmatrix} & p &= \frac{1}{w}p^* \label{eq:perspective_projmat_temp}
+\end{align}
 
-%%% Need to replace the rest %%%
-\subsection*{\#\#\#to be fitted into perspective projection\#\#\#}
-Normal graphics projection from scaled from meters to $x,y,x \in [-1,1]$:
 
 \begin{equation}
-    Proj\_mat = \begin{bmatrix}
-        \frac{AR}{tan(\frac{\theta}{2})}    &   0                                   &   0   &   0   \\
-        0                                   &   \frac{1}{tan(\frac{\theta}{2})}    &   0   &   0   \\
-        0                                   &   0                                   &   -\frac{n+f}{n-f} & 1\\
-        0                                   &   0                                   &   \frac{2nf}{n-f} & 0
-    \end{bmatrix}
+    \begin{aligned}
+        zd_n &= Ad_n + B &, for \quad Z &= d_n \\
+        zd_f &= Ad_f + B &, for \quad Z &= d_f
+    \end{aligned}
+    \label{eq:perspective_zeqs}
 \end{equation}
 
-where $AR$ is the aspect ratio $\frac{Width}{Height}$, $n$ is the near clipping plane and $f$ is the far clipping plane. $\theta$ is the field of view. Here Horizontal field of view is equal to the vertical field of view.
 
 
-\subsection{Othographic projection}
+% Solving this we get;
 
-Orthographic projection differ from perspective projection in the sense that all projection lines are parallel. As we see in Figure~\ref{fig:orthographic_projection}, this means that there is no focus point for the projection lines, but rather just a view direction. This causes the relative sizes in the image to be preserved, making the projection type ideal for schematics and applications that require measurements.
+% \begin{align}
+%     A &= \frac{n}{n-f} & B &= -\frac{nf}{n-f}
+% \end{align}
 
-\begin{figure}[!htb]
-    \centering
-    \includegraphics[width=0.5\textwidth]{3d_ortho}
-    \caption{Orthographic projection}
-    \label{fig:orthographic_projection}
-\end{figure}
+% resulting in the complete perspective projection shown in Equation~\eqref{eq:perspective_projmat_full}.
 
+% \begin{align}
+%     p^* &= \begin{bmatrix}
+%         x \\ y \\ z \\ w
+%     \end{bmatrix} = \begin{bmatrix}
+%         \frac{\rho}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 & 0 \\
+%         0 & \frac{1}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 \\
+%         0 & 0 & \frac{n}{n-f} & -\frac{nf}{n-f} \\
+%         0 & 0 & 1 & 0
+%     \end{bmatrix} \begin{bmatrix}
+%         X \\ Y \\ Z \\ 1
+%     \end{bmatrix} & p &= \frac{1}{w}p^*
+%     \label{eq:perspective_projmat_full}
+% \end{align}
 
+% \subsection{Ray Tracing}
 
-%%%% NEED TO BE REWRITTEN AND PLACED SOMEWHERE
+% Ray tracing techniques have existed as a fully developed technique since 1986 \cite{raytraceblog}. Today, Ray tracing is highly used in film making for CGI, which is Computer-generated imagery to be applied on its own, or in the same frame as actual camera footage. The inherent ability ray tracing has to mimic real world light, enables the algorithms to produce very realistic images. The downside is that tracing light rays, all their reflections, refractions and shadows they cast, is really computationally expensive.
 
-\section{TEMP\_PLACEMENT...Structuring 360 degree data}
-360 degree picture data representations are highly based on the type of camera used to cature it: A fisheye lense will make a circle in the rectangular matrix representation, causeing a lot of black "dead" spots with no information. The same type of representation is gained from using a Catadioptric lens. However this also removes the middle of the picture, because of the way it is constructed.
+% Since 1986 much research has gone into improving the rendering time of these images. \cite{wald2009state} summarizes many of these, but also shows the conflicts between ray tracing approaches for video games, and approaches for movie making. The article states that the movie making approach is centered around making data structures for efficient computation, while more or less ignoring the building time of these structures. This can be backed up by Section 3 of \cite{carsmovie}, where the main focus is shown to be memory management and quality. In real time applications however, these data structures needs to be built and rebuilt, in addition to the computation, in real time. 
 
-Another way to represent a picture is by a unit-sphere coordiante system. Using a $\phi$~-~$\theta$ map, instead of pixels. This $\phi$~-~$\theta$ representation usually maps to a pixel on a cube or stitched image, assuming the different cameras have a common focal point. You can also go directly from a pinhole, fisheye, catadioptric or some other representation to a sphere representation. This will just cause non-captured parts to be black.
+% Nvidia recently developed their RTX-series of graphics cards \cite{raytraceblog}, promising to revolutionize the ways shadows, reflections and lighting are shown in real-time image processing, with the use of ray tracing. Based on their launch event presentation \cite{NvidiaConference}, this will be realized by; the integration of ray tracing cores, a locally developed ray tracing acceleration algorithm and deep learning. The ray tracing cores are are specialized processing units, designed to parallelize ray tracing calculations, while the ray tracing acceleration refers to a search algorithm for finding intersections between light rays and objects. Lastly the deep learning portion uses a previously trained deep learning network, made specifically to upscale and fill in the gaps of lower quality images, with the goal of reducing the amount of rays needed to be calculated, as well as to perform anti-aliasing tasks.
 
-Low level structure comes down to a list, matrix, struct or class of some sort, maybe with compressing. Accessing and iterating over these structures however can be done in different ways: 
-
-\subsection{Fisheye and Catadioptric representation}
-This method of structuring uses the maps the catured image directly to a rectangular data structure; eg. matrix. The representation is directly coupled to pixels, rather than angles and distances. To get this information, we have to recreate it from a camera model.
-
-\textbf{Pros:}
-\begin{itemize}
-    \item Easy to implement
-    \item Easy to iterate over
-\end{itemize}
-
-\textbf{Cons:}
-\begin{itemize}
-    \item Harder to visualize for humans. 
-    \item Need extra functions to get real world positions
-    \item Pixels gets mashed or streched, potentially removing information from the picture.
-\end{itemize}
-
-\subsection{Unit sphere representation}
-The low level implementation of this method is still a matrix-like data structure. However, the indexes of the matrix is now the spherical angles $\phi$ and $\theta$. This causes each matrix value to represent a color value in a specific direction from the center point.
-
-\textbf{Pros:}
-\begin{itemize}
-    \item Easier for humans to visualize if a 3D-sphere picture is produced.
-    \item Easy to iterate over
-    \item Depending on the cameras used to make this representation, you may preserve more picture details.
-    \item Easiest implementation for image stitching
-    \item Real world coordinates directly represented in data array indices. 
-\end{itemize}
-
-\textbf{Cons:}
-\begin{itemize}
-    \item Need extra post-processing of image data. 
-    \item Distortions will be stretched out and amplified, if you convert from fisheye or catadioptric.
-\end{itemize}
-
-\subsection{Etended Unit sphere representation}
-By defining a class containing a storage data structure, and functions for accessing it. Main goal of the representation is to "remove" edges of the picture, since the edge wraps around to the other side like a sphere.
-
+\cleardoublepage

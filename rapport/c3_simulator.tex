@@ -1,0 +1,146 @@
+%===================================== CHAP 3 =================================
+
+\chapter{Simulator for 360 degree fisheye lens image captures on an UAV}
+
+This chapter shows the implementation of a camera simulator for capturing omnidirectional fisheye lens images in Unreal Engine, building upon an already existing robotics simulator plugin called AirSim\footnote{github.com/Microsoft/AirSim} \cite{Airsim_paper}. The existing simulator is augmented with a ROS\footnote{ros.org/} interface \todo{Find out whether it wil be complete enough to publish}, an omnidirectional camera model, with modelled fisheye lens distortion and the ability to transform and combine the perspective pictures captured, into a singe wide angle fisheye lens distorted image. For now the simulator will only supporrt the equidistant distortion model, and will be made to mimic real calibrated camera models, for example through the Kalibr\footnote{github.com/ethz-asl/kalibr/} toolbox.
+
+The chapter is split into two parts: The first sections will show related work on camera simulators for robotics and current advancements in the field, as well as discuss relevant platforms to base the omnidirectional camera simulator on. The second part will go deeper into the implementation of the simulator itself, with a focus on the augmentations done within the scope of this project.
+
+\section{Related work} \label{sec:simulator_related}
+
+As mentioned in Section~\ref{chap:introduction}, there ha been a lot of recent development within the area of computer vision for use with UAVs, which has also produced the need for realistic simulators to ease the testing process, decrease costs and increase the efficiency. Some simulators are built from ground up, like V-REP \cite{VREP2013} and Gazebo \cite{GazeboPaper}. While these are general purpose robotics simulators, there are multiple projects extending these simulators to connect to other interfaces or concentrate on spesific tasks. For example RotorS\footnote{github.com/ethz-asl/rotors\_simulator} \cite{RotorS}, which is a simulator for control and state estimation of MAV or Micro Aerial Vehicles. This simulator is built on top of Gazebo and Gazebo's ROS interface, adding MAV and Sensor models, while extending Gazebos capabilities for MAV control and state estimation.
+
+Since 2010 there has also been an increase in the use of game engines and other graphically capable software to help increase the realism of computer vision simulators. HNMSim \cite{HNMSimPaper} is made for simulating networks fo UAVs, and combined the use of Matlab, Simulink and LabView with the game engine Unreal Engine and 3D modeling software Autodesk 3Ds Max, to create more realistic environments for the simulations. They also implemented and simulated a multirotor with an attached camera in Unreal Engine. Another simulator\cite{UnityROSsim}, created by Meng et al, built upon the Unity game engine. They implemented a multirotor and a LIDAR model, with a ROS interface to communicate to externally and use control algorithms made for ROS.
+
+In 2017, two simulators for simulating autonomous vehicles in realistic environments were released. Sim4CV \cite{Sim4CV_paper} and AirSim \cite{Airsim_paper}. Both of these implement a multirotor and a car model, using Unreal Engine as a their original backend. It should be mentioned that in late 2018, Microsoft started developing AirSim for Unity as well, and it looks like they will support both engines going forward. Both of these will be discussed in more detail in Section~\ref{sec: UnityUnreal} and \ref{sec:Chooseplatform}.
+
+While experiments have been done using real or synthetic picture datasets, taken with fisheye or catadioptric cameras, have shown that it can be beneficial to use over normal perspective cameras \cite{Zhang2016BenefitOL, OmniVIOKalman, CompOmniVSLAM}, there are no realeased open source simulators for 360 degree camera captures with the possibility for closed loop operation. One probable reason for this is that only perspective camera models have been implemented in most simulators. There was a promising looking project implementing a 360 degree fisheye camera for Gazebo shown as a tutorial at Gazebo's tutorials page \cite{GazeboWideWeb}. However this seems to have been removed recently, as it is no longer available. Both Unity and Unreal Engine on the other hand support capturing scenes to cubemaps. Cubemaps are made of 6 images with a common focus point for their projction, covering all directions in the scene. This has been used to capture 360 degree video, as seen in \cite{UnityCubeCapture, UnrealCubeCapture}, although it has not been implemented as a part of either of the simulators mentioned. 
+
+The simulator in this project will be based on a previously developed simulator, and will focus on implementing 360 degree camera capture to work with the already existing framework. Due to a lack of experience with simulators and game engines, there will only be a focus on open software, with a sizeable community, and that are still used and supported by the developers. All of Gazebo, Unreal Engine and Unity match this criteria. For this reason, these platforms will be compared as alternatives. An important note is that this comparison should not be treated as comprehensive comparison of the different simulators or game engines mentioned, and far from all features will be mentioned in this chapter. This comparison is just a result of the initial research done, in order to make a omnidirectional camera simulator for robotics applications.
+
+\section{Gazebo} \label{sec:Gazebo}
+
+Gazebo is a simulator platform made for robot simulation, with 3D graphics for Linux platforms, and can be built with four different physics engines \cite{Gazebo_phys}. The four engines are optimized for different purposes, making Gazebo quite versatile when it comes to simulations. Gazebo is fully usable as a standalone, but it also comes with native ROS support. This means that you can model your hardware in Gazebo and run the same ROS code with this model, as you would with the physical robot.
+
+The simulations in Gazebo are built from XML-files describing the world, models that inhabit the world, and the physical properties of each model. The models can be attached to one another through joints and links to create more complex models. Gazebo also provides the ability to add specific behaviour to the simulation through plugins. Plugins are compiled C++ code attached to a specific component, like a model, sensor or world. It is also through these plugins you define ROS behaviour.
+
+The camera sensor implements a perspective camera, giving you access to the typical camera parameters: horizontal FOV, image height, image width, color coding, and near and far clipping plane. Gazebo also comes with support for adding Gaussian noise and distortion to the camera. The distortion is based on Brown's distortion model\todo{cite or add to theory}, which models both radial and tangential distortion effects to the output picture. There are no shutter speed settings, meaning that motion blur and exposure time settings are not naturally supported.
+
+\begin{figure}[!htb]
+    \centering
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[height=4cm]{rapport/fig/Simulator/A-screenshot-of-the-RotorS-simulator-The-scene-is-built-up-from-Gazebo-default-models.png}
+        \caption{From RotorS simulator paper \cite{RotorS}}
+        \label{fig:A}
+    \end{subfigure}
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[height=4cm]{rapport/fig/Simulator/gazebomoon.jpg}
+        \caption{Moon simulation by NASA \cite{NASAGazeboppt}}
+        \label{fig:NASA_Gazebo_moon}
+    \end{subfigure}
+    \caption{Comparison Gazebo simulations with built-in shader(left) and custom shader(right). The simulation on the right also implements custom imported materials.}
+    \label{fig:Gazebo_imgs}
+\end{figure}
+
+Another drawback of Gazebo is its graphical capabilities of the built-in model editor. Although you may import meshes and textures from other 3D modeling software, there are limited ways of editing these inside the editor. This makes it difficult to create realistic scenes. This is especially true when it comes to implementing vegitation and foliage, like grass, trees and flowers, as these require fine tuning together with the other elements in the scene to look good. The capability of the shader is also quite limiting compared to other 3D modeling software, meaning that it is hard to create realistic light settings. Especially with multiple light sources. There is however support for using custom shaders, as NASA did in this example \cite{NASAGazeboppt}, showing that it is posible to augment the capabilities of Gazebo to produce good results. Figure~\ref{fig:Gazebo_imgs} shows a comparison between two environments made in Gazebo. The left picture shows an environment from the RotorS simulator, using mostly built-in models and materials, while the right picture shows a custom imported environment with a custom built shader.
+
+\section{Unity and Unreal Engine 4} \label{sec: UnityUnreal}
+
+Unity and Unreal engine are the most popular game engines freely available. Being game engines, both heavily focus on productivity in graphics design, as well as visuals of the final product. This means that a large part of the software toolkit is based around editing the scene and objects in it to look good. Both engines provide extensive tools for making custom meshes, textures, animations and lighting effects, making the graphical development of the simulation much easier than in Gazebo. In addition to this both Unity and Unreal Engine provide a large library of premade scenes to use freely, in addition to a marketplace where you can buy assets others have made. Figure~\ref{fig:showcase_unityunreal} shows two images of scenes made in Unity and Unreal Engine. Rendering scenes of this quality will of course require more powerful hardware than what is needed for Gazebo, especially for real time simulations, but the pictures shows the power of the tools provided in these engines. 
+
+\begin{figure}[!htb]
+    \centering
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[height=3.8cm]{rapport/fig/Simulator/unrealforest.jpg}
+        \caption{Made by Michal Franczak using the UE4 editor \cite{Unrealshowcase}}
+        \label{fig:unreal_forest}
+    \end{subfigure}
+    \begin{subfigure}{0.45\textwidth}
+        \includegraphics[height=3.8cm]{rapport/fig/Simulator/unitycave.jpg}
+        \caption{Created by Pat Goodwin using the Unity editor \cite{Unityshowcase}}
+        \label{fig:Unity_cave}
+    \end{subfigure}
+    \caption{Showcase of two quite realistic looking environments created in Unreal Engine 4 (left) and Unity (right)}
+    \label{fig:showcase_unityunreal}
+\end{figure}
+
+Unity is based around the scripting language C\# to change the behaviour of the object. The script itself is then attached to a spesific object. The behaviour is defined through five user defined functions: $Awake()$, $Start()$, $Update()$, $FixedUpdate()$, and $LateUpdate()$. The $Awake()$ and $Start()$ functions are called once, while the rest are called every frame. Most importantly we note that $FixedUpdate()$ is specifically used for updating physics, while $Update()$ is for general purpose updates. However, it is not required to use the provided physics engine.
+
+Unreal Engine is built quite similarly to Unity in regards to the building blocks of the Editor. However, there are two ways to define behaviour. One is through C++ and the other is through a visual scripting language called Blueprints. The functionality of Blueprints are almost identical to that of the C\# scripting in Unity, however the programming interface is graphical and node based, as seen in Figure~\ref{fig:blueprint_editor}. The complete source code of Unreal Engine freely available, and you are allowed to make changes to the engine itself. Through registering as a Epic Games developer, you get access to all features of Unreal Engine through the C++ source code. This enables the ability to apply extra optimizations for your specific problem, and may be relevant for performance critical tasks. The same interface available to the blueprints are also available to C++, giving you the ability to do scripting similar to that of Unity.
+
+\begin{figure}[!htb]
+    \centering
+    \includegraphics[height = 6cm]{rapport/fig/Simulator/blueprintprog.JPG}
+    \caption{Partial picture of UE4 Blueprint for tree branch texture}
+    \label{fig:blueprint_editor}
+\end{figure}
+
+Both Unreal Engine and Unity comes with a physics engine, and usage of this engine is completely optional. This is very different from the implementation in Gazebo, where physical properties like mass, inertia are core parts of a model. While the engines do implement solvers for collision, interaction through joint and links and physical properties, there are no initial support for simulation of wind or other fluid mechanics.
+
+When it comes to computer vision applications, there are no native support for this in the engines. This may be solved by using OpenCV\footnote{https://opencv.org/} as a part of the project. There exists a wrapper for OpenCV in Unity, and you may link the OpenCV libraries directly into your Unreal Engine projects through C++ code. OpenCV provides many computer vision algorithms as well as algorithms for machine learning, and can be used to augment the engine's cameras for wide angle functionality, lens distortions or similar effects. To get an interface to create image datasets from Unreal Engine, a plugin has been created called UnrealCV~\cite{UnrealCV}. This plugin does not support omnidirectional captures or lens models at the moment.
+
+Sim4CV and Airsim both simulators implement model for an quadcopter and a car. While Sim4CV is written directly into Unreal Engine, AirSim is available as a plugin for both Unreal Engine and for Unity. According to the paper realeased with Sim4V, this fact limits the capabilities of the physics simulations of AirSim \cite{Sim4CV_paper}, though I have no additional data to back that up. Since AirSim is a plugin, it is possible to integrate with existing projects, and the procedure is well documented in their Github repository. This means that it is relatively easy to integrate AirSim into environments created by others, without AirSim in mind. 
+
+When it comes to interfacing, both simulators implement an API for Python, as well as C++. Sim4CV also implements an API for MATLAB\footnote{www.mathworks.com/products/matlab.html}, which might be useful since MATLAB has lots of CV toolboxes available through the NTNU licence. Though none of them directly implements an interface to ROS, there are examples of simple ROS communication with AirSim in their repository.
+
+Though both simulators implement much of the same features, the differences between the two come in the form of their main focus. Sim4CV focus on computer vision, and the usage of computer vision for machine learning and deep learning, while AirSim mainly focuses on supporting different types of sensors. This means that for projects aiming for sensor fusion, or testing complete vehicle systems, AirSim would be preferred. Sim4CV may on the other hand be preferrable for AI computer vision projects. Especially for deep learning, as it implements a TensorFlow-like interface.
+
+\section{Choosing a platform for the simulator} \label{sec:Chooseplatform}
+
+As mentioned at the start of this chapter, the goal of this project is to implement a simulator for capturing realistic 360 degree images with fisheye lenses, with the ability to calibrate the camera parameters to match real fisheye lens cameras and solutions to capture 360 degree footage. In addition, the simulator should provide an interface to ROS~\cite{ROSpaper}, to enable the simulator to be used with already existing implementations of SLAM and Visual odometry algorithms for ROS. This criteria limits the usage to Linux based systems, as ROS are currently only available on Linux platforms. While Unity and Unreal Engine are most optimized for development on Windows or Mac OS, both provide the ability to build their latest releases on Linux. Table~\ref{tab:comparison_interface} shows a comparison of the interfaces of Gazebo, Unity and Unreal Engine.
+
+\begin{table}[!htb]
+    \centering
+    \begin{tabular}{|c|>{\centering\arraybackslash}m{2cm}|>{\centering\arraybackslash}m{2cm}|>{\centering\arraybackslash}m{2.8cm}|>{\centering\arraybackslash}m{2cm}|>{\centering\arraybackslash}m{2cm}|>{\centering\arraybackslash}m{2cm}|>{\centering\arraybackslash}m{2cm}|} \hline
+        \textbf{Software}          & \textbf{OS}  & \textbf{ROS} & \textbf{Model/Scene toolbox}   & \textbf{Sensor models} & \textbf{Language}              \\ \hline \hline
+        Gazebo          & Linux           & Yes           & Simple  & Yes & C++, XML                 \\ \hline
+        Unity           & Windows, Mac OS, Linux                    & No            & Extensive & Plugins & C\# \\ \hline
+        Unreal Engine   & Windows, Mac OS, Linux  & No            & Extensive & Plugins/ custom versions & C++, Blueprint \\ \hline
+    \end{tabular}
+    \caption{Interface comparison of Gazebo, Unity and Unreal Engine}
+    \label{tab:comparison_interface}
+\end{table}
+
+The main advantages Gazebo has over the game engines is its implementation of multiple physics engines, its ROS integration and its modular sensor setup. A larger part of the community is also familiar, and uses Gazebo for computer vision purposes, which may provide more useful help online for the project. The main drawback of Gazebo is that there is limited tooling for graphical development. This means that there are relatively few high quality scenes made for Gazebo. Making these from scratch would require much more time and experience, as well as additional graphical software, which is unreasonable for the scope of this project. 
+
+The tools available in the Unreal Engine and Unity, provide a much easier way to make high quality scenes for our camera, or editing scenes that are readily available. The fact that both of these engines also support omnidirectional video capture through cube maps, may also be helpful when implementing the 360 degree camera feature. In Table~\ref{tab:comparison_camera} we see that Gazebo has the most advanced distortion model. This is true even with the extra functionality provided by AirSim and Sim4CV. Additional post processing of the images must therefore be applied to the images, to obtain the same distortion effects. The main advantages of Unity and Unreal Engine is their advanced shader and post processing unit, which can capture multiple effects seen in normal cameras, like motion blur caused by the combination of a large exposure time and movement.
+
+\begin{table}[!htb]
+    \centering
+    \begin{tabular}{|c|>{\centering\arraybackslash}m{4cm}|>{\centering\arraybackslash}m{4cm}|>{\centering\arraybackslash}m{4cm}|} \hline
+        \textbf{Camera} & \textbf{Gazebo} & \textbf{Unity} & \textbf{Unreal Engine} \\ \hline\hline
+        Camera type     & Perspective & Perspective, Cubemaps & Perspective, Cubemaps \\ \hline
+        Distortion model & Radial, Tangetial & Radial  & "Panini Distortion"\cite{panini} \\ \hline
+        Noise           & Yes & Yes & Yes \\ \hline
+        Exposure time   & No & Yes & Yes \\ \hline
+        Motion Blur     & No & Yes & Yes \\ \hline
+        Vignette        & No & Yes & Yes \\ \hline
+        
+    \end{tabular}
+    \caption{Camera comparison of Gazebo, Unity and Unreal Engine}
+    \label{tab:comparison_camera}
+\end{table}
+
+The shader of Unreal Engine and Unity is also significantly better at lighting, creating shadows and handling reflections. In Gazebo only directional light sources cast shadows. These are light sources like the sun, where all light rays are close to parallel. In the game engines however, all sources of light do. This means that the the shadows cast in the scene will act more natural, and you will also naturally get effects like multiple shadows of differing intensity appear when being near multiple sources of light. The supported area lighting also casts softer shadows, as they would in the real world. Creating similar effects in Gazebo would only be possible by writing a custom shader. Table~\ref{tab:comparison_shader} shows a comparison of the built- in shaders. The additional sky light tool in Unreal Engine is a special form of directional light, meant to simulate the effect of sunlight outdoors.
+
+\begin{table}[!htb]
+    \centering
+    \begin{tabular}{|>{\centering\arraybackslash}m{3cm}|>{\centering\arraybackslash}m{3.5cm}|>{\centering\arraybackslash}m{4cm}|>{\centering\arraybackslash}m{3.5cm}|} \hline
+        \textbf{Shader effects} & \textbf{Gazebo} & \textbf{Unity} & \textbf{Unreal Engine} \\ \hline\hline
+        Light types     & Lightmaps, Directional, Spot, Point, Ambient & Lightmaps, Directional, Spot, Point, Area, Ambient, Fluorescent & Same as Unity + Sky Light \\ \hline
+        Shadow Generation & Directional light sources & All light sources & All light sources \\ \hline
+        Ambience        & Yes & Yes & Yes \\ \hline
+        Chromatic abberation & No & Yes & Yes \\ \hline
+        Ambient occusion & No & Yes & Yes \\ \hline
+        Light shafts    & No & Yes & Yes \\ \hline
+        Bloom/lens flare & No & Yes & Yes \\ \hline
+        Reflection      & No & Yes & Yes \\ \hline
+    \end{tabular}
+    \caption{Built-in shader capabilities of Gazebo, Unity and Unreal Engine}
+    \label{tab:comparison_shader}
+\end{table}
+
+As the scope of this project mostly includes image capture, and the fact that there are multiple effects that appear in real world photography that cannot be reasonably recreated in Gazebo, the main platform of this project will be a game engine. To write my own shader for Gazebo is also too much work for one person to do withing a few months, without any previous experience in the field. Since omnidirectional image capture is not implemented in any of the platforms, that has to be done no matter which platform is chosen. Writing a lens model for adding distortions to companion that, should be managable.
+
+Unreal Engine has some advantages over Unity. The fact that you may write C++ code directly, increases the ability to use libraries like OpenCV without needing additional wrappers. It also simplifies the process of making a ROS interface, as the ROS projects are also compiled from C++ code. Although AirSim started supporting Unity in late autumn 2018, it was only available for Unreal Engine 4 at the start of this project. As I did not find any equivalent plugins for Unity, Unreal Engine was chosen as the simulator platform. AirSim was also chosen over Sim4CV because of the availability of the source code on Github, making it easy to see that the project was still developed and had a sizeable user base. The versatility it provides for additional sensors is also something that may be utilized in future projects.
+
