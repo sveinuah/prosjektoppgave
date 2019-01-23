@@ -11,6 +11,7 @@ SET(catkin_dir ${PROJECT_ROOT}/catkin_ws)
 SET(fisheye_dir ${PROJECT_ROOT}/Fisheyecapture/FisheyeCaptureClient)
 SET(LLVM_DIR ${PROJECT_ROOT}/llvm-build)
 SET(RPCLIB_INCLUDES ${PROJECT_ROOT}/external/rpclib/rpclib-2.2.1)
+SET(OpenCV_DIR /usr/share/OpenCV)
 
 set(CMAKE_CC_COMPILER ${CC})
 set(CMAKE_CXX_COMPILER ${CXX})
@@ -28,6 +29,8 @@ add_compile_options(-std=c++14)
 #    -Wno-variadic-macros -Wno-parentheses -Wno-unused-function \
 #    -Wno-unused -Wno-documentation -fdiagnostics-show-option \
 #    -pthread ${RPC_LIB_DEFINES} ${CMAKE_CXX_FLAGS}")
+
+SET(CMAKE_CXX_FLAGS "-Wall -Wextra" ${CMAKE_CXX_FLAGS})
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     
