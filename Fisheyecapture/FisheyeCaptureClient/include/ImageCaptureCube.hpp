@@ -26,7 +26,10 @@ public:
 
 		CubeImageRequest(ImageCaptureBase::ImageType type, bool as_float, bool compress_val) {
 			for (int i = 0; i < num_cameras; i++) {
-				capture_requests.push_back(ImageCaptureBase::ImageRequest(camera_names[i], image_type, pixels_as_float, compress));
+				capture_requests.push_back(ImageCaptureBase::ImageRequest(camera_names[i], type, as_float, compress_val));
+				image_type = type;
+				pixels_as_float = as_float;
+				compress = compress_val;
 			}
 		}
 
@@ -46,7 +49,8 @@ private:
 
 };
 
-std::string ImageCaptureCube::camera_names[ImageCaptureCube::num_cameras] = {"forward_center", "right_center", "backward_center", "left_center", "down_center"};
+// Initialize names
+std::string ImageCaptureCube::camera_names[ImageCaptureCube::num_cameras] = {"down_center", "forward_center", "left_center", "backward_center", "right_center"};
 
 }} //namespace msr::airlib
 
