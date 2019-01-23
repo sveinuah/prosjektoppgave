@@ -34,7 +34,7 @@ struct Lens {
 class FisheyeTransformer {
 
 public:
-	FisheyeTransformer(int height, int width, Lens lens);
+	FisheyeTransformer(int dest_height, int dest_width, int src_height, int src_width, Lens lens);
 	~FisheyeTransformer();
 
 	enum class CameraPosition : int {
@@ -60,6 +60,8 @@ private:
 	
 
 	void addToImage(const SourceImage& src_img);
+
+	double calculatePhiMax(const Lens& lens) const;
 
 	UnitSphereCoordinate calculateSphereCoords(Eigen::Vector3f coord) const;
 

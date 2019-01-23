@@ -43,14 +43,22 @@ FisheyeTransformer::SourceImage::SourceImage(cv::Mat img, CameraPosition positio
 	width = width_val;
 }
 
-FisheyeTransformer::FisheyeTransformer(int height, int width, Lens lens) : lens_(lens) {
-	fisheye_image_ = cv::Mat::zeros(height, width, CV_8UC4);
+FisheyeTransformer::FisheyeTransformer(int dest_height, int dest_width, int src_height, int src_width, Lens lens) : lens_(lens) {
+	fisheye_image_ = cv::Mat::zeros(dest_height, dest_width, CV_8UC4);
 
-	PixelTransform << 	width/2.0f, 0, width/2.0f,
-						0, height/2.0f, height/2.0f,
-						0,0,1;
+	InversePixelTransform << 	src_width/2.0f, 0, src_width/2.0f,
+								0, src_height/2.0f, src_height/2.0f,
+								0,0,1;
 
 	InversePixelTransform = PixelTransform.inverse();
+
+	float max = static_cast<float>(calculatePhiMax(lens));
+	std::cout << "r_max: " << max << std::endl;
+
+	PixelTransform << 	dest_width/(2.0*max), 0, dest_width/2.0,
+						0, dest_height/(2.0*max), dest_height/2.0,
+						0, 0, 1;
+
 	makeCameraRotations();
 }
 
@@ -105,6 +113,28 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 			fisheye_image_.at<uchar>(p_fish[0]+3, p_fish[1]) = src_img.image.at<uchar>(p[0]+3, p[1]);
 		}
 	}
+}
+
+double FisheyeTransformer::calculatePhiMax(const Lens& lens) const {
+
+	// Calculate in small parts
+	double phi_max = 270.0;
+
+	double max = lens.k1 * phi_max;
+
+	double temp = lens.k2*phi_max*phi_max;
+	max += temp;
+
+	temp = lens.k3*phi_max*phi_max;
+	temp = temp*phi_max;
+	max += temp;
+
+	temp = lens.k4*phi_max*phi_max;
+	temp = temp*phi_max;
+	temp = temp*phi_max;
+	max += temp;
+
+	return max;
 }
 
 UnitSphereCoordinate FisheyeTransformer::calculateSphereCoords(ImageCoordinate coord) const {
