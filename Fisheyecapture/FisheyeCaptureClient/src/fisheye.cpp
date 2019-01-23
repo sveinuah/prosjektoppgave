@@ -54,6 +54,12 @@ FisheyeTransformer::FisheyeTransformer(int dest_height, int dest_width, int src_
 						0, dest_height/(2.0*max), dest_height/2.0,
 						0, 0, 1;
 
+
+	std::cout << "INV: " << InversePixelTransform << std::endl;
+	std::cout << "TRANS: " << PixelTransform << std::endl;
+	std::cout << "MAX: " << max << std::endl;
+	std::cout << "DIM(w/h): " << src_width << ", " << src_height << std::endl;
+
 	makeCameraRotations();
 }
 
@@ -81,6 +87,15 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 
 	int h = src_img.height;
 	int w = src_img.width;
+
+	Pixel p;
+	p << 225, 112, 1;
+	ImageCoordinate c = InversePixelTransform*p;
+	rotateToCameraFrame(&c, src_img.pos);
+
+	std::cout << c <<  std::endl;
+
+	return;
 
 	for (int u = 0; u < w; u++) {
 		
@@ -162,7 +177,7 @@ void FisheyeTransformer::makeCameraRotations() {
 	camera_rotations.push_back(left);
 
 	//Back rotation = rx(180)Ry(-90)
-	Eigen::Quaternionf back(0, 0.70710678118, 0.70710678118, 0);
+	Eigen::Quaternionf back(0, 0, 0.70710678118, 0.70710678118);
 	back.normalize();
 	camera_rotations.push_back(back);
 
@@ -178,7 +193,6 @@ void FisheyeTransformer::rotateToCameraFrame(ImageCoordinate* c, CameraPosition 
 	q.vec() = *c;
 
 	int p = static_cast<int>(pos);
-	printf("%d\n", p);
 
 	Eigen::Quaternionf q_rotated = (camera_rotations.at(p) * q * camera_rotations.at(p).inverse());
 	*c = q_rotated.vec();
