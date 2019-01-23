@@ -6,7 +6,8 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "common/VectorMath.hpp"
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 namespace msr { namespace airlib {
 
@@ -14,73 +15,64 @@ struct UnitSphereCoordinate {
 	float theta, phi;
 };
 
-struct ImageCoordinate {
-	float x, y;
-};
-
-struct Pixel {
-	int u, v;
-};
-
 struct Lens {
 	float scale;
-	std::vector<float> distortion_params; //Following the polynomial model
+	float k1, k2, k3, k4; //Following the polynomial model
 
-	Pixel distortion_center;
-	Eigen::Matrix<float, 2, 2> stretch_matrix;
+	Eigen::Vector2f distortion_center;
+	Eigen::Matrix2f stretch_matrix;
 
 	Lens();
 	Lens(const Lens& l);
-	Lens(float scale, const std::vector<float>& params);
-	Lens(float scale, const std::vector<float>& params, Pixel dist_c, const Eigen::Matrix<float, 2, 2>& stretch_m);
+	Lens(float scale, float k1, float k2, float k3, float k4);
+	Lens(float scale, float k1, float k2, float k3, float k4, Eigen::Vector2f dist_c, const Eigen::Matrix2f& stretch_m);
+	~Lens();
+
+	float distort(float phi);
 };
 
 class FisheyeTransformer {
 
 public:
-	FisheyeTransformer(int height, int width);
+	FisheyeTransformer(int height, int width, Lens lens);
 	~FisheyeTransformer();
 
+	enum class CameraPosition : int {
+		DOWN = 0,
+		FRONT,
+		LEFT,
+		BACK,
+		RIGHT
+	};
+
 	struct SourceImage {
-		cv::Mat image;
-		VectorMathf::Pose camera_pose;
-		int height; int width;
+	cv::Mat image;
+	FisheyeTransformer::CameraPosition pos;
+	int height; int width;
 
-		SourceImage(cv::Mat img, VectorMathf::Pose pose, int height_val, int width_val) {
-			image = img;
-			camera_pose = pose;
-			height = height_val;
-			width = width_val;
-		}
-	};
+	SourceImage(cv::Mat img, CameraPosition position, int height_val, int width_val);
+};
 
-	struct TransformRequest {
-		std::vector<SourceImage> src_images;
-		Eigen::Matrix<float, 4, 4> projectionMatrix;
-
-		TransformRequest(std::vector<SourceImage>& img_vec, const Eigen::Matrix<float, 4, 4>& proj_mat) {
-			src_images = img_vec;
-			projectionMatrix = proj_mat;
-		}
-	};
-
-	void transformSingle(const SourceImage& src_img, const VectorMathf::Pose& src_pose, const Eigen::Matrix<float, 4, 4>& src_mat);
-	cv::Mat& transformAndCombine(const TransformRequest& req);
+	cv::Mat& transformAndCombine(const std::vector<SourceImage>& src_imgs);
+	cv::Mat& transformSingle(const SourceImage& src_img);
 
 private:
 	
 
-	void addToImage(const SourceImage& src_img, const VectorMathf::Pose& src_pose, const Eigen::Matrix<float, 4, 4>& src_mat);
+	void addToImage(const SourceImage& src_img);
 
-	UnitSphereCoordinate calculateSphereCoords(const VectorMathf::Pose& pose, float aspect_ratio, float focal_length, ImageCoordinate feature) const;
+	UnitSphereCoordinate calculateSphereCoords(Eigen::Vector3f coord) const;
 
-	Pixel indexToPixel(int index, int width);
-	int pixelToIndex(Pixel p, int width);
-	UnitSphereCoordinate pixelToUnitSphere(Pixel p);
-
-	Pixel getDestinationPixel(UnitSphereCoordinate c);
+	void makeCameraRotations();
+	void rotateToCameraFrame(Eigen::Vector3f& c, CameraPosition pos);
 
 	cv::Mat fisheye_image_;
+	Lens lens_;
+
+	Eigen::Matrix<float,3,3> PixelTransform;
+	Eigen::Matrix<float,3,3> InversePixelTransform;
+
+	std::vector<Eigen::Quaternionf> camera_rotations;
 
 };
 }} //namespace msr::airlib end
