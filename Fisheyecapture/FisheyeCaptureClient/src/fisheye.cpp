@@ -13,21 +13,17 @@ Lens::Lens(float scale, float k1, float k2, float k3, float k4, Eigen::Vector2f 
 	: scale(scale), k1(k1), k2(k2), k3(k3), k4(k4), distortion_center(dist_c), stretch_matrix(stretch_m)
 {}
 
-Lens::Lens(float scale, float k1, float k2, float k3, float k4)
+Lens::Lens(float scale, float k1, float k2, float k3, float k4) : scale(scale), k1(k1), k2(k2), k3(k3), k4(k4)
 {
-	Eigen::Vector2f dist_c;
-	dist_c << 0,0;
-	StretchMatrix stretch_m = StretchMatrix::Identity();
-	Lens(scale, k1, k2, k3, k4, dist_c, stretch_m);
+	distortion_center << 0,0;
+	stretch_matrix = StretchMatrix::Identity();
 }
 
 Lens::Lens(const Lens& l) : Lens(l.scale, l.k1, l.k2, l.k3, l.k4, l.distortion_center, l.stretch_matrix)
 {}
 
-Lens::Lens()
-{
-	Lens(1.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-}
+Lens::Lens() : Lens(1.0f, 0.5f, 0.0f, 0.0f, 0.0f)
+{}
 
 Lens::~Lens() {}
 
@@ -44,16 +40,15 @@ FisheyeTransformer::SourceImage::SourceImage(cv::Mat img, CameraPosition positio
 }
 
 FisheyeTransformer::FisheyeTransformer(int dest_height, int dest_width, int src_height, int src_width, Lens lens) : lens_(lens) {
-	fisheye_image_ = cv::Mat::zeros(dest_height, dest_width, CV_8UC4);
+	fisheye_image_ = cv::Mat::zeros(dest_height, dest_width, CV_8UC3);
 
 	InversePixelTransform << 	src_width/2.0f, 0, src_width/2.0f,
 								0, src_height/2.0f, src_height/2.0f,
 								0,0,1;
 
-	InversePixelTransform = PixelTransform.inverse();
+	InversePixelTransform = InversePixelTransform.inverse().eval();
 
 	float max = static_cast<float>(calculatePhiMax(lens));
-	std::cout << "r_max: " << max << std::endl;
 
 	PixelTransform << 	dest_width/(2.0*max), 0, dest_width/2.0,
 						0, dest_height/(2.0*max), dest_height/2.0,
@@ -87,30 +82,34 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 	int h = src_img.height;
 	int w = src_img.width;
 
-	Pixel p, p_fish;
-	ImageCoordinate c, c_fish;
-	UnitSphereCoordinate vec;
-	float r;
-
 	for (int u = 0; u < w; u++) {
 		
 		for (int v = 0; v < h; v++) {
 
+			Pixel p, p_fish;
 			p << u , v, 1;
-			c = InversePixelTransform*p;
+			ImageCoordinate c = InversePixelTransform*p;
 
-			rotateToCameraFrame(c, src_img.pos);
-			vec = calculateSphereCoords(c);
+			rotateToCameraFrame(&c, src_img.pos);
+
+			UnitSphereCoordinate vec = calculateSphereCoords(c);
 			
-			r = lens_.distort(vec.phi);
-			c_fish << r*std::cos(vec.theta) , r*std::sin(vec.theta);
+			float r = lens_.distort(vec.phi);
+
+			ImageCoordinate c_fish;
+			c_fish << r*std::cos(vec.theta) , r*std::sin(vec.theta), 1;
+			//std::cout << "C_fish: " << c_fish << std::endl;
 
 			p_fish = PixelTransform*c_fish;
 
-			fisheye_image_.at<uchar>(p_fish[0], p_fish[1]) = src_img.image.at<uchar>(p[0], p[1]);
-			fisheye_image_.at<uchar>(p_fish[0]+1, p_fish[1]) = src_img.image.at<uchar>(p[0]+1, p[1]);
-			fisheye_image_.at<uchar>(p_fish[0]+2, p_fish[1]) = src_img.image.at<uchar>(p[0]+2, p[1]);
-			fisheye_image_.at<uchar>(p_fish[0]+3, p_fish[1]) = src_img.image.at<uchar>(p[0]+3, p[1]);
+			int final_u = static_cast<int>(p_fish.coeff(0));
+			int final_v = static_cast<int>(p_fish.coeff(1));
+			//std::cout << "P_fish: " << p_fish << std::endl;
+
+			fisheye_image_.at<uchar>(final_u, final_v) = src_img.image.at<uchar>(u, v);
+			fisheye_image_.at<uchar>(final_u+1, final_v) = src_img.image.at<uchar>(u+1, v);
+			fisheye_image_.at<uchar>(final_u+2, final_v) = src_img.image.at<uchar>(u+2, v);
+			//fisheye_image_.at<uchar>(final_u+3, final_v) = src_img.image.at<uchar>(u+3, v);
 		}
 	}
 }
@@ -118,7 +117,7 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 double FisheyeTransformer::calculatePhiMax(const Lens& lens) const {
 
 	// Calculate in small parts
-	double phi_max = 270.0;
+	double phi_max = 270.0*M_PI/180.0;
 
 	double max = lens.k1 * phi_max;
 
@@ -137,11 +136,11 @@ double FisheyeTransformer::calculatePhiMax(const Lens& lens) const {
 	return max;
 }
 
-UnitSphereCoordinate FisheyeTransformer::calculateSphereCoords(ImageCoordinate coord) const {
+UnitSphereCoordinate FisheyeTransformer::calculateSphereCoords(const ImageCoordinate& coord) const {
 
-	float theta = std::atan2(coord[1], coord[0]);
-	float sqrt = std::sqrt(pow(coord[0],2) + pow(coord[1],2));
-	float phi = std::atan2(sqrt,coord[2]);
+	float theta = std::atan2(coord.coeff(1), coord.coeff(0));
+	float sqrt = std::sqrt(pow(coord.coeff(0),2) + pow(coord.coeff(1),2));
+	float phi = std::atan2(sqrt, coord.coeff(2));
 
 	return {theta, phi};
 }
@@ -153,34 +152,36 @@ void FisheyeTransformer::makeCameraRotations() {
 	camera_rotations.push_back(q);
 
 	//Front rotation = Rx(0)Ry(-90)
-	Eigen::Quaternionf front(0.70710678118, 0, 0.70710678118, 0);
-	q.normalize();
+	Eigen::Quaternionf front(0.70710678118, 0.70710678118, 0, 0);
+	front.normalize();
 	camera_rotations.push_back(front);
 
 	//Left rotation = Rx(90)Ry(-90)
-	Eigen::Quaternionf left(0.5, 0.5, -0.5, 0.5);
-	q.normalize();
+	Eigen::Quaternionf left(0.5, 0.5, -0.5, -0.5);
+	left.normalize();
 	camera_rotations.push_back(left);
 
 	//Back rotation = rx(180)Ry(-90)
-	Eigen::Quaternionf back(0, 0.70710678118, 0, 0.70710678118);
-	q.normalize();
+	Eigen::Quaternionf back(0, 0.70710678118, 0.70710678118, 0);
+	back.normalize();
 	camera_rotations.push_back(back);
 
 	//Right rotation = Rx(-90)Ry(-90)
-	Eigen::Quaternionf right(0.5, -0.5, -0.5, -0.5);
-	q.normalize();
+	Eigen::Quaternionf right(0.5, 0.5, 0.5, 0.5);
+	right.normalize();
 	camera_rotations.push_back(right);
 }
 
-void FisheyeTransformer::rotateToCameraFrame(ImageCoordinate& c, CameraPosition pos) {
+void FisheyeTransformer::rotateToCameraFrame(ImageCoordinate* c, CameraPosition pos) {
 	Eigen::Quaternionf q;
 	q.w() = 0;
-	q.vec() = c;
+	q.vec() = *c;
 
 	int p = static_cast<int>(pos);
+	printf("%d\n", p);
 
-	c = (camera_rotations.at(p) * q * camera_rotations.at(p).inverse()).vec();
+	Eigen::Quaternionf q_rotated = (camera_rotations.at(p) * q * camera_rotations.at(p).inverse());
+	*c = q_rotated.vec();
 }
 
 }} //namespace msr::airlib end

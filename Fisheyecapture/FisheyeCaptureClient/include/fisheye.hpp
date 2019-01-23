@@ -63,10 +63,10 @@ private:
 
 	double calculatePhiMax(const Lens& lens) const;
 
-	UnitSphereCoordinate calculateSphereCoords(Eigen::Vector3f coord) const;
+	UnitSphereCoordinate calculateSphereCoords(const Eigen::Vector3f& coord) const;
 
 	void makeCameraRotations();
-	void rotateToCameraFrame(Eigen::Vector3f& c, CameraPosition pos);
+	void rotateToCameraFrame(Eigen::Vector3f* c, CameraPosition pos);
 
 	cv::Mat fisheye_image_;
 	Lens lens_;
