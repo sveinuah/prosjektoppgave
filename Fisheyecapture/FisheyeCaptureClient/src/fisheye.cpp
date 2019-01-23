@@ -40,7 +40,7 @@ FisheyeTransformer::SourceImage::SourceImage(cv::Mat img, CameraPosition positio
 }
 
 FisheyeTransformer::FisheyeTransformer(int dest_height, int dest_width, int src_height, int src_width, Lens lens) : lens_(lens) {
-	fisheye_image_ = cv::Mat::zeros(dest_height, dest_width, CV_8UC3);
+	fisheye_image_ = cv::Mat::zeros(dest_height, dest_width, CV_8UC4);
 
 	InversePixelTransform << 	src_width/2.0f, 0, src_width/2.0f,
 								0, src_height/2.0f, src_height/2.0f,
@@ -88,15 +88,6 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 	int h = src_img.height;
 	int w = src_img.width;
 
-	Pixel p;
-	p << 225, 112, 1;
-	ImageCoordinate c = InversePixelTransform*p;
-	rotateToCameraFrame(&c, src_img.pos);
-
-	std::cout << c <<  std::endl;
-
-	return;
-
 	for (int u = 0; u < w; u++) {
 		
 		for (int v = 0; v < h; v++) {
@@ -113,18 +104,13 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 
 			ImageCoordinate c_fish;
 			c_fish << r*std::cos(vec.theta) , r*std::sin(vec.theta), 1;
-			//std::cout << "C_fish: " << c_fish << std::endl;
 
 			p_fish = PixelTransform*c_fish;
 
 			int final_u = static_cast<int>(p_fish.coeff(0));
 			int final_v = static_cast<int>(p_fish.coeff(1));
-			//std::cout << "P_fish: " << p_fish << std::endl;
 
 			fisheye_image_.at<uchar>(final_u, final_v) = src_img.image.at<uchar>(u, v);
-			fisheye_image_.at<uchar>(final_u+1, final_v) = src_img.image.at<uchar>(u+1, v);
-			fisheye_image_.at<uchar>(final_u+2, final_v) = src_img.image.at<uchar>(u+2, v);
-			//fisheye_image_.at<uchar>(final_u+3, final_v) = src_img.image.at<uchar>(u+3, v);
 		}
 	}
 }
@@ -166,7 +152,7 @@ void FisheyeTransformer::makeCameraRotations() {
 	q.normalize();
 	camera_rotations.push_back(q);
 
-	//Front rotation = Rx(0)Ry(-90)
+	//Front rotation = Rx(90)Ry(0)
 	Eigen::Quaternionf front(0.70710678118, 0.70710678118, 0, 0);
 	front.normalize();
 	camera_rotations.push_back(front);
@@ -176,12 +162,12 @@ void FisheyeTransformer::makeCameraRotations() {
 	left.normalize();
 	camera_rotations.push_back(left);
 
-	//Back rotation = rx(180)Ry(-90)
+	//Back rotation = rx(90)Ry(180)
 	Eigen::Quaternionf back(0, 0, 0.70710678118, 0.70710678118);
 	back.normalize();
 	camera_rotations.push_back(back);
 
-	//Right rotation = Rx(-90)Ry(-90)
+	//Right rotation = Rx(90)Ry(90)
 	Eigen::Quaternionf right(0.5, 0.5, 0.5, 0.5);
 	right.normalize();
 	camera_rotations.push_back(right);
