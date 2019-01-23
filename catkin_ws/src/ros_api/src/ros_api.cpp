@@ -30,8 +30,8 @@ namespace msr { namespace airlib {
 	// ************ Local Typedefs ******************
 	typedef ImageCaptureBase::ImageRequest ImageRequest;
 	typedef ImageCaptureBase::ImageResponse ImageResponse;
-	typedef msr::airlib_rpclib::RpcLibAdapatorsBase RpcLibAdapatorsBase;
-	typedef Eigen::Matrix<float, 4, 4> ProjMat;
+	typedef FisheyeTransformer::CameraPosition CameraPosition;
+	typedef FisheyeTransformer::SourceImage SourceImage;
 	// **********************************************
 
 	RosRpcLibClient::RosRpcLibClient(const std::string& ip_address, uint16_t port, float timeout_sec) : RpcLibClientBase(ip_address, port, timeout_sec) {
@@ -78,6 +78,56 @@ void screenLoggerCallback(const std_msgs::String::ConstPtr& msg) {
 
 int main(int argc, char* argv[]) {
 
+	cv::Mat img = cv::imread("/home/schwung/Pictures/index.jpeg");
+	cv::Mat converted_img;
+	cv::cvtColor(img, converted_img,cv::COLOR_YCrCb2RGB);
+	SourceImage src(converted_img, CameraPosition::DOWN, converted_img.size().height, converted_img.size().width);
+
+	std::vector<SourceImage> source;
+	source.push_back(src);
+
+	Lens lens(1.0, 1.0, 0.0, 0.0, 0.0);
+
+	FisheyeTransformer fish(1024, 1024, src.height, src.width, lens);
+
+	std::cout << "Fish in" << std::endl;
+
+	cv::Mat output = fish.transformAndCombine(source);
+
+	std::cout << "Fish out" << std::endl;
+
+	cv::namedWindow("output",CV_WINDOW_AUTOSIZE);
+	cv::imshow("output", output);
+	cv::waitKey(0);
+
+	ROS_INFO("Starting Multirotor node!");
+	
+	ros::init(argc, argv, "multirotor");
+	ros::NodeHandle n;
+	ros::Publisher pub = n.advertise<sensor_msgs::Image>("/FisheyeImages", 1);
+
+	ros::Rate loop_rate(5);
+
+	while(ros::ok()) {
+
+		cv_bridge::CvImage cv_img;
+		cv_img.image = output;
+		cv_img.encoding = "rgba8";
+
+		sensor_msgs::Image ros_img;
+		cv_img.toImageMsg(ros_img);
+
+		pub.publish(ros_img);
+
+		ros::spinOnce();
+		loop_rate.sleep();
+	}
+
+	return 0;
+}
+
+/*int main(int argc, char* argv[]) {
+
 	using namespace msr::airlib;
 
 	RosRpcLibClient c;
@@ -102,28 +152,36 @@ int main(int argc, char* argv[]) {
 	const vector<ImageResponse>& responses = c.simGetImages(req.capture_requests);
 	for (auto response : responses) {
 
-		cv::Mat temp_img(response.height, response.width, CV_8UC4);
+		cv::Mat temp_img(response.height, response.width, CV_8UC4, response.image_data_uint8.data());
+		CameraPosition pos;
 
-		int it = 0;
-		int i, j = 0;
-		for (auto& data : response.image_data_uint8) {
-			i = (it/4)%response.width;
-			j = (it/4)/response.width;
-
-			temp_img.at<uchar>(i,j);
-			it++;
+		if (response.camera_name == "forward_center") {
+			pos = CameraPosition::FRONT;
+		}
+		else if (response.camera_name == "left_center") {
+			pos = CameraPosition::LEFT;
+		}
+		else if (response.camera_name == "right_center") {
+			pos = CameraPosition::RIGHT;
+		}
+		else if (response.camera_name == "backward_center") {
+			pos = CameraPosition::BACK;
+		}
+		else if (response.camera_name == "down_center") {
+			pos = CameraPosition::DOWN;
+		}
+		else {
+			std::cout << "DOES NOT MATCH NAME!!" << std::endl;
 		}
 
-		VectorMathf::Pose p(response.camera_position, response.camera_orientation);
-		FisheyeTransformer::SourceImage img(temp_img, p, response.height, response.width);
+		FisheyeTransformer::SourceImage img(temp_img, pos, response.height, response.width);
 
 		images.push_back(img);
 	}
 
-	Eigen::Matrix<float, 4, 4> proj = Eigen::Matrix<float, 4, 4>::Identity();
-	FisheyeTransformer::TransformRequest request(images, proj);
-	FisheyeTransformer fish(640, 640);
-	cv::Mat output = fish.transformAndCombine(request);
+	Lens lens;
+	FisheyeTransformer fish(2048, 2048, 640, 640, lens);
+	cv::Mat output = fish.transformAndCombine(images);
 
 	cv::namedWindow("edges",1);
 	cv::imshow("edges", output);
@@ -140,7 +198,6 @@ int main(int argc, char* argv[]) {
 
 	ros::Rate loop_rate(5);
 
-	constexpr int count = 0;
 	while(ros::ok()) {
 
 		cv_bridge::CvImage cv_img;
@@ -161,6 +218,6 @@ int main(int argc, char* argv[]) {
 	c.disconnectAndDisarm();
 
 	return 0;
-}
+}*/
 
 #endif // ros_api
