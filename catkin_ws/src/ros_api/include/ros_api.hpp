@@ -3,7 +3,6 @@
 
 #include <string>
 
-#include "common/CommonStructs.hpp"
 #include "api/RpcLibClientBase.hpp"
 
 namespace msr { namespace airlib {
