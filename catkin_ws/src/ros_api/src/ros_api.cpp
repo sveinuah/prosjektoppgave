@@ -78,56 +78,6 @@ void screenLoggerCallback(const std_msgs::String::ConstPtr& msg) {
 
 int main(int argc, char* argv[]) {
 
-	cv::Mat img = cv::imread("/home/schwung/Pictures/index.jpeg");
-	cv::Mat converted_img;
-	cv::cvtColor(img, converted_img,cv::COLOR_YCrCb2RGB);
-	SourceImage src(converted_img, CameraPosition::DOWN, converted_img.size().height, converted_img.size().width);
-
-	std::vector<SourceImage> source;
-	source.push_back(src);
-
-	Lens lens(1.0, 1.0, 0.0, 0.0, 0.0);
-
-	FisheyeTransformer fish(1024, 1024, src.height, src.width, lens);
-
-	std::cout << "Fish in" << std::endl;
-
-	cv::Mat output = fish.transformAndCombine(source);
-
-	std::cout << "Fish out" << std::endl;
-
-	cv::namedWindow("output",CV_WINDOW_AUTOSIZE);
-	cv::imshow("output", output);
-	cv::waitKey(0);
-
-	ROS_INFO("Starting Multirotor node!");
-	
-	ros::init(argc, argv, "multirotor");
-	ros::NodeHandle n;
-	ros::Publisher pub = n.advertise<sensor_msgs::Image>("/FisheyeImages", 1);
-
-	ros::Rate loop_rate(5);
-
-	while(ros::ok()) {
-
-		cv_bridge::CvImage cv_img;
-		cv_img.image = output;
-		cv_img.encoding = "rgba8";
-
-		sensor_msgs::Image ros_img;
-		cv_img.toImageMsg(ros_img);
-
-		pub.publish(ros_img);
-
-		ros::spinOnce();
-		loop_rate.sleep();
-	}
-
-	return 0;
-}
-
-/*int main(int argc, char* argv[]) {
-
 	using namespace msr::airlib;
 
 	RosRpcLibClient c;
@@ -174,13 +124,13 @@ int main(int argc, char* argv[]) {
 			std::cout << "DOES NOT MATCH NAME!!" << std::endl;
 		}
 
-		FisheyeTransformer::SourceImage img(temp_img, pos, response.height, response.width);
+		FisheyeTransformer::SourceImage img(temp_img, pos, temp_img.size().height, temp_img.size().width);
 
 		images.push_back(img);
 	}
 
 	Lens lens;
-	FisheyeTransformer fish(2048, 2048, 640, 640, lens);
+	FisheyeTransformer fish(1024, 1024, images[0].height, images[0].width, lens);
 	cv::Mat output = fish.transformAndCombine(images);
 
 	cv::namedWindow("edges",1);
@@ -218,6 +168,6 @@ int main(int argc, char* argv[]) {
 	c.disconnectAndDisarm();
 
 	return 0;
-}*/
+}
 
 #endif // ros_api
