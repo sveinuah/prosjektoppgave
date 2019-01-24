@@ -11,6 +11,7 @@ STRICT_MODE_OFF
 STRICT_MODE_ON
 
 #include <iostream>
+#include <ctime>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 
@@ -99,6 +100,7 @@ int main(int argc, char* argv[]) {
 
 	std::vector<SourceImage> images;
 
+	std::time_t start = std::time(nullptr);
 	const std::vector<ImageResponse>& responses = c.simGetImages(req.capture_requests);
 	std::vector<cv::Mat*> mat_ptrs;
 	std::cout << "Images received: " << responses.size() << std::endl;
@@ -106,7 +108,8 @@ int main(int argc, char* argv[]) {
 	for (ImageResponse response : responses) {
 
 		cv::Mat* temp_img = new cv::Mat;
-		*temp_img = cv::Mat(response.height, response.width, CV_8UC4, response.image_data_uint8.data());
+		*temp_img = cv::Mat(response.height, response.width, CV_8UC4);
+		memcpy(temp_img->data, response.image_data_uint8.data(), response.image_data_uint8.size());
 		mat_ptrs.push_back(temp_img);
 
 		CameraPosition pos;
@@ -130,8 +133,6 @@ int main(int argc, char* argv[]) {
 			std::cout << "DOES NOT MATCH NAME!!" << std::endl;
 		}
 
-		std::cout << temp_img << std::endl;
-
 		images.emplace_back(SourceImage(*temp_img, pos, temp_img->size().height, temp_img->size().width));
 	}
 
@@ -144,12 +145,27 @@ int main(int argc, char* argv[]) {
 	}
 
 	Lens lens;
-	FisheyeTransformer fish(1024, 1024, images.at(0).height, images.at(0).width, lens);
+	FisheyeTransformer fish(512, 512, images.at(0).height, images.at(0).width, lens);
+	std::time_t conv_time = std::time(nullptr);
 	cv::Mat output = fish.transformAndCombine(images);
+	std::time_t finished = std::time(nullptr);
 
-	cv::namedWindow("edges",1);
+	std::cout << "IMG get: " << conv_time - start << "Seconds" << std::endl;
+	std::cout << "IMG convert: " << finished - conv_time << "Seconds" << std::endl;
+	std::cout << "IMG total: " << finished - start << "Seconds" << std::endl;
+
+	cv::Mat cvt_img;
+	cv::cvtColor(output, cvt_img, cv::COLOR_RGBA2BGRA);
+
+/*	cv::namedWindow("edges",1);
 	cv::imshow("edges", output);
-	cv::waitKey(0);
+	cv::waitKey(0);*/
+
+	std::vector<int> params;
+	params.push_back(CV_IMWRITE_JPEG_QUALITY);
+	params.push_back(95);
+
+	cv::imwrite("/home/schwung/Pictures/fisheye.jpeg", cvt_img, params);
 
 	// UNTIL HERE !!! *************************************
 
@@ -165,9 +181,7 @@ int main(int argc, char* argv[]) {
 	while(ros::ok()) {
 
 		cv_bridge::CvImage cv_img;
-		
-
-
+		cv_img.image = output;
 		cv_img.encoding = "rgba8";
 
 		sensor_msgs::Image ros_img;
