@@ -31,27 +31,29 @@ struct Lens {
 	float distort(float phi);
 };
 
+enum class CameraPosition : int {
+	DOWN = 0,
+	FRONT,
+	LEFT,
+	BACK,
+	RIGHT
+};
+
+struct SourceImage {
+	cv::Mat image;
+	CameraPosition pos;
+	int height; int width;
+
+	SourceImage() {}
+	SourceImage(cv::Mat img, CameraPosition position, int height_val, int width_val);
+	~SourceImage();
+};
+
 class FisheyeTransformer {
 
 public:
 	FisheyeTransformer(int dest_height, int dest_width, int src_height, int src_width, Lens lens);
 	~FisheyeTransformer();
-
-	enum class CameraPosition : int {
-		DOWN = 0,
-		FRONT,
-		LEFT,
-		BACK,
-		RIGHT
-	};
-
-	struct SourceImage {
-	cv::Mat image;
-	FisheyeTransformer::CameraPosition pos;
-	int height; int width;
-
-	SourceImage(cv::Mat img, CameraPosition position, int height_val, int width_val);
-};
 
 	cv::Mat& transformAndCombine(const std::vector<SourceImage>& src_imgs);
 	cv::Mat& transformSingle(const SourceImage& src_img);

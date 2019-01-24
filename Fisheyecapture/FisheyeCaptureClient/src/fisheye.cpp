@@ -4,7 +4,7 @@
 
 namespace msr { namespace airlib {
 
-typedef FisheyeTransformer::CameraPosition CameraPosition;
+//typedef FisheyeTransformer::CameraPosition CameraPosition;
 typedef Eigen::Vector3f Pixel;
 typedef Eigen::Vector3f ImageCoordinate;
 typedef Eigen::Matrix2f StretchMatrix;
@@ -32,12 +32,15 @@ float Lens::distort(float phi) {
 }
 
 
-FisheyeTransformer::SourceImage::SourceImage(cv::Mat img, CameraPosition position, int height_val, int width_val) {
+SourceImage::SourceImage(cv::Mat img, CameraPosition position, int height_val, int width_val) {
 	image = img;
 	pos = position;
 	height = height_val;
 	width = width_val;
 }
+
+SourceImage::~SourceImage() {}
+
 
 FisheyeTransformer::FisheyeTransformer(int dest_height, int dest_width, int src_height, int src_width, Lens lens) : lens_(lens) {
 	fisheye_image_ = cv::Mat::zeros(dest_height, dest_width, CV_8UC4);
@@ -67,7 +70,7 @@ FisheyeTransformer::~FisheyeTransformer() {}
 
 cv::Mat& FisheyeTransformer::transformAndCombine(const std::vector<SourceImage>& req)
 {
-	for (auto& image : req)
+	for (const SourceImage& image : req)
 	{
 		addToImage(image);
 	}
@@ -84,6 +87,8 @@ cv::Mat& FisheyeTransformer::transformSingle(const SourceImage& src_img)
 
 void FisheyeTransformer::addToImage(const SourceImage& src_img)
 {
+
+	std::cout << &src_img.image << std::endl;
 
 	int h = src_img.height;
 	int w = src_img.width;
@@ -110,7 +115,7 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 			int final_u = static_cast<int>(p_fish.coeff(0));
 			int final_v = static_cast<int>(p_fish.coeff(1));
 
-			fisheye_image_.at<uchar>(final_u, final_v) = src_img.image.at<uchar>(u, v);
+			fisheye_image_.at<cv::Vec4b>(cv::Point(final_u, final_v)) = src_img.image.at<cv::Vec4b>(cv::Point(u, v));
 		}
 	}
 }
