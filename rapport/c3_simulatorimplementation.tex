@@ -48,15 +48,15 @@ The API AirSim provides consists of a server/client based system, using the RPC\
     \label{fig:comm_pattern}
 \end{figure}
 
-My project will be implemented for the multirotor game mode. This means that it will not run on the other game modes. The reason for this is that the cameras need to be setup specifically for each game mode, through the Unreal Engine Blueprints imported by the game mode. The fisheye camera and ROS interface will depend on the C++ RPC client API, the perspective camera model and the image capture module for AirSim. The contribution of my project will be to combine perspective images into a single fisheye lens distorted image, with as few changes as possible to the AirSim plugin. In addition to this I will build upon the C++ API to allow for publishing images to ROS, through the normal ROS publisher interface. Figure~\ref{fig:comm_pattern} shows the main communication flow of Unreal Engine, AirSim and the fisheye camera. As the project does not invole HITL with PX4, Mavlink or any controller setup, they are not shown in the Figure, and will not be discussed in this report.
+The project will be implemented for the multirotor game mode. This means that it will not run on the other game modes. The reason for this is that the cameras need to be setup specifically for each game mode, through the Unreal Engine Blueprints imported by the game mode. The fisheye camera and ROS interface will depend on the C++ RPC client API, the perspective camera model and the image capture module for AirSim. The contribution of the project will be to combine perspective images into a single fisheye lens distorted image, with as few changes as possible to the AirSim plugin. In addition to this it will build upon the C++ API to allow for publishing images to ROS, through the normal ROS publisher interface. Figure~\ref{fig:comm_pattern} shows the main communication flow of Unreal Engine, AirSim and the fisheye camera. As the project does not invole HITL with PX4, Mavlink or any controller setup, they are not shown in the Figure, and will not be discussed in this report.
 
 \section{Implementation}
 
-A couple of things to consider when implementing the fisheye camera is performance, maintainability, extendability, complexity and the timeframe to implement it. As this is done by one person in only a few months, the timeframe is the most important one. While maintainability and extendability are important factors, especially if this is to be distributed and used by others, the main goal is to get it working. However, both the ROS interface and the fisheye camera will be made as individual components, and should not depend on one another. The ROS Interface should also only depend on the client API of AirSim. Optimizing for performance will also not be in the scope of this project. It is however something that has to be done before distribution.
+The goal of the implementation is to get a fisheye camera working, and to to publish the images to ROS. As only perspective cameras, and mounted to specific parts of the multirotor, it was not possible to implement this without making changes to AirSim. However, it was decided early on that no changes would be made to the source code of Unreal Engine. While some changes had to be made to the API in order to implement the ROS node, all of the old API is still functioning and usable.
 
-\subsection{Early development}
+\subsection{Early development} \label{sec:Early_dev}
 
-As described in \ref{sec:simulator_related}, Unreal Engine support capturing of cubemaps, which is a technique of capturing the whole scene through rendering six $90^\circ$ FoV pictures. These are then strored in a special structure, with tooling for projecting it onto a sphere or plane trough equreclinear projection. As this incorporates radial distortion, it was a natural starting point for simulating fisheye lenses. This article \cite{UnrealCubeCapture} also described also described using it in their omnidirectional video.
+As described in \ref{sec:simulator_related}, Unreal Engine support capturing of cubemaps, which is a technique of capturing the whole scene through rendering six $90^\circ$ FoV pictures. These are then strored in a special structure, with tooling for projecting it onto a sphere or plane trough equreclinear projection. As the texture mapping tool for cubemaps incorporate radial distortion, it was a natural starting point for simulating fisheye lenses. It is also used in \cite{UnrealCubeCapture}, where they describe using it in their omnidirectional video for their game.
 
 There are various tutorials of how to capture $360^\circ$ screenshots, and many of them are using the Nvidia Ansel plugin \cite{SceenshotsAnsel}. While this made equireclinear captures of the scene, there was no way of processing the images directly, outside of saving them locally and loading the images through OpenCV or similar means. While this is definitely possible, it would create unecessary save and load cycles. In addition to this, the performance of saving and loading images from disk varies heavilly from conputer to computer.
 
@@ -168,51 +168,9 @@ In order to be able to get the correct images, the camera setup on the multiroto
     \label{fig:new_Blueprint_multirotor}
 \end{figure}
 
-\subsection{Projection model}
+The following sections will present the modeling of the fisheye camera. The steps described are done on a pixel-wise level. This means that the whole process has to be repeated for each pixel in all of the five perspective images.
 
-In order to capture as much as possible of the scene, the far end clipping plane distance was kept at the end of the simulated scene. This is approximated by letting $d_f \rightarrow \infty$ in the perspective projection matrix. AirSim implements Unreal Engines Reversed Perspevtive matrix, which contains the projected volume to be defined by: $x,y \in [-1,1]$ and $z \in [0,1]$. In addition to this, the far clipping plane is projected to $z=0$ and the near clipping plane is projected to $z=1$. Using these constraints and the set of equations in Equation~\eqref{eq:perspective_zeqs} the projection of $Z$ becomes:
-
-\begin{equation}
-    \begin{aligned}
-        d_n &= Ad_n + B &, for \quad Z &= d_n, z = 1 \\
-        0 &= Ad_f + B &, for \quad Z &= d_f, z = 0 \\
-        \Rightarrow A &= \frac{d_n}{d_n-d_f} & B &= -\frac{nf}{n-f}
-    \end{aligned}
-    \label{eq:impl_perspective_zeqs}
-\end{equation}
-
-A FoV of $90^\circ$ means that $d_n=1$, since the near clipping plane is defined to be 2 by 2 units wide. Using this as well as letting $d_f \rightarrow \infty$ we get the parameters shown in Equation~\eqref{eq:impl_inf_far_clip}.
-
-\begin{equation}
-    \begin{aligned}
-    A = \lim_{f \rightarrow \infty} \frac{n}{n-f} =
-    \lim_{f \rightarrow \infty} \frac{\frac{n}{f}}{\frac{n}{f}-1} = 
-    \frac{0}{-1} = 0 \\
-    B = \lim_{f \rightarrow \infty} -\frac{nf}{n-f} = 
-    \lim_{ \rightarrow \infty} -\frac{n}{\frac{n}{f}-1} =
-    -\frac{n}{-1} = n = 1
-    \end{aligned}
-    \label{eq:impl_inf_far_clip}
-\end{equation}
-
-Adding these to the perspective projection matrix from Equation~\eqref{eq:perspective_projmat_temp}, we get the matrix shown in Equation~\eqref{eq:impl_proj_mat}.
-
-\begin{equation}
-    \begin{bmatrix}
-        \frac{\rho}{arctan(\Theta/2)} & 0 & 0 & 0 \\
-        0 & \frac{1}{arctan(\Theta/2)} & 0 & 0 \\
-        0 & 0 & A & B \\
-        0 & 0 & 1 & 0 
-    \end{bmatrix} = \begin{bmatrix}
-        \frac{1}{arctan(\theta/2)} & 0 & 0 & 0 \\
-        0 & \frac{1}{arctan(\Theta/2)} & 0 & 0 \\
-        0 & 0 & 0 & 1 \\
-        0 & 0 & 1 & 0 
-    \end{bmatrix}
-    \label{eq:impl_proj_mat}
-\end{equation}
-
-\subsection{Combining pictures and adding distortion}
+\subsection{Combining pictures} \label{sec:combining_pictures}
 
 Figure~\ref{fig:impl_Sphere_projection} shows the setup for the custom cube capture used by the fisheye camera. The available information through at the client side is the image request response from AirSim. This structure contains: Camera name, Camera position and orientation, time stamp, the picture dimension in pixels, the image type and the image itself. It also contains whether the picture is in PNG format. However, all requests sent to get a fisheye pictures will request a raw RGBA8 picture, so this field is irrelevant. 
 
@@ -280,20 +238,20 @@ Figure~\ref{fig:impl_Sphere_projection} shows the setup for the custom cube capt
     \label{fig:impl_Sphere_projection}
 \end{figure}
 
-To provide a correct projection, the angles $\phi$ and $\theta$, shown in Figure~\ref{fig:fisheye_spherical_projection} must be known. In order to convert the pixel positions to these angles, it is beneficial to change to image coordinates on a plane with $x^i,y^i \in [-1,1]$. Here $[x^i, y^i]^\top$ and $u^i,v^i]^\top$ refer to the image and pixel coordinates on the intermediate image plane, not to be confused with $[x, y]^\top$ and $[u^i,v^i]^\top$, which are the image and pixel coordinates of the fisheye picture. With the aspect ratio $\rho = 1$, each perspective image will be of dimention $W \times H = W \times W$ pixels. Using this and the matrix from Equation~\eqref{eq:pixel_transform}, we get Equation~\eqref{eq:impl_pixel_inverse_transform}:
+To provide a correct projection, the angles $\phi$ and $\theta$, shown in Figure~\ref{fig:fisheye_spherical_projection} must be known. In order to convert the pixel positions to these angles, it is beneficial to change to image coordinates on a plane with $x^i,y^i \in [-1,1]$. Here $[x^i, y^i]^\top$ and $[u^i,v^i]^\top$ refer to the image and pixel coordinates on the image plane represented in each camera's own coordinate frame. Table~\ref{tab:impl_quaternion_rotations} on page \pageref{tab:impl_quaternion_rotations} show the respective superscripts used to describe each camera frame. Using Equation~\eqref{eq:pixel_transform}, with each camera having an aspect ratio $\rho = 1$, we get the transformation shown in Equation~\eqref{eq:impl_pixel_inverse_transform}.
 
 \begin{equation}
-    \begin{bmatrix}
+    p^i = \begin{bmatrix}
         x^i \\ y^i \\ 1
     \end{bmatrix} = \begin{bmatrix}
-        \frac{W}{2} & 0 & u_0 \\
-        0 & \frac{H}{2} & v_0 \\
+        \frac{W}{2} & 0 & \frac{W}{2} \\
+        0 & \frac{H}{2} & \frac{H}{2} \\
         0 & 0 & 1
     \end{bmatrix}^{-1}\begin{bmatrix}
         u^i \\ v^i \\ 1
     \end{bmatrix} = \begin{bmatrix}
         \frac{2}{W} & 0 & -1 \\
-        0 & \frac{2}{W} & -1 \\
+        0 & \frac{2}{H} & -1 \\
         0 & 0 & 1
     \end{bmatrix}\begin{bmatrix}
         u^i \\ v^i \\ 1
@@ -301,69 +259,119 @@ To provide a correct projection, the angles $\phi$ and $\theta$, shown in Figure
     \label{eq:impl_pixel_inverse_transform}
 \end{equation}
 
-As of now, the image coordinates are represented in their local coordinate frame. However, by design the downward pointing camera defines the forward direction of the camera, hereforth named with the superscript $\{\}^d$. Hence, all image coordiantes needs to be rotated to this frame. AirSim provides a library for quaternion math, which will be used for this conversion. Table~\ref{tab:impl_quaternion_rotations} show the respective quaternion rotations for the named cameras:
+We define a coordinate frame $\bullet^c$ for the fisheye $360^\circ$ camera to be alligned with the coordinate frame of the downward pointing camera. Hence all points $p^i = [x^i,y^i,z^i]$, where $i$ refers to the superscript assigned to each camera frame, should be rotated to the camera frame. This rotation is shown in Equation~\eqref{eq:impl_rotation}. $R^d_i$ represents the rotation from fra $i$ to $d$, and $q_{d,i}$ represent the same rotation on quaternion form.
+
+\begin{subequations}
+    \begin{align}
+        p^c &= \!\begin{aligned}[t]
+            p^d = \begin{bmatrix} x^d \\ y^d \\ z^d \end{bmatrix} &= R^d_i p^i
+        \end{aligned} \label{eq:impl_rotation_R} \\[0.75ex]
+        q^c &= \!\begin{aligned}[t]
+            q^d = \begin{bmatrix} 0 \\ p^d \\ 0 \end{bmatrix} &= (q_{d,i})q^i(q_{d,i})^\top
+        \end{aligned} \label{eq:impl_rotation_q}
+    \end{align}
+    \label{eq:impl_rotation}
+\end{subequations}
+
+The quaternion rotation in Equation~\eqref{eq:impl_rotation_q} will be implemented in this project. Table~\ref{tab:impl_quaternion_rotations} lists each camera, their defined coordinate frame, as well as the rotation needed for the representative image coordinate vector. Here $\hat{\theta}$ and $\hat{\phi}$ represent the rotation angle around the local $x-$ and $y-$axis respectively.
 
 \begin{table}[!htb]
     \centering
     \begin{tabular}{|c|c|c|c|} \hline
-        $p^i$ & Camera Direction & $R^d_i = R_{x,\psi}(\psi)R_{y,\eta}(\eta)$ & Quaternion $q_{d,i}$ \\ \hline \hline
-        $p^d$ & Down & 0, 0 & $[1,0,0,0]^\top$ \\ \hline
-        $p^f$ & Front & 0, -90 & $[0.707,0,0.707,0]^\top$ \\ \hline
-        $p^r$ & Right & -90, -90 & $[0.5,-0.5,-0.5,-0.5]^\top$\\ \hline
-        $p^b$ & Back & 180, -90 & $[0,0.707,0,0.707]^\top$ \\ \hline
-        $p^l$ & Left & 90, -90 & $[0.5,0.5,-0.5,0.5]^\top$\\ \hline
+        Camera Direction & $p^i$ & $R^d_i = R_{x,\hat{\theta}}(\hat{\theta})R_{y,\hat{\phi}}(\hat{\phi})$ & Quaternion $q_{d,i}$ \\ \hline \hline
+        Down & $p^d$ & $\hat{\theta} = 0$, $\hat{\phi} = 0$ & $[1,0,0,0]^\top$ \\ \hline
+        Front & $p^f$ & $\hat{\theta} = 0$, $\hat{\phi} = -90$ & $[0.707,0,0.707,0]^\top$ \\ \hline
+        Right & $p^r$ & $\hat{\theta} = -90$, $\hat{\phi} = -90$ & $[0.5,-0.5,-0.5,-0.5]^\top$\\ \hline
+        Back & $p^b$ & $\hat{\theta} = 180$, $\hat{\phi} = -90$ & $[0,0.707,0,0.707]^\top$ \\ \hline
+        Left & $p^l$ & $\hat{\theta} = 90$, $\hat{\phi} = -90$ & $[0.5,0.5,-0.5,0.5]^\top$\\ \hline
     \end{tabular}
-    \caption{Rotation needed to rotate image coordinate $x^i$ to $x^d$}
+    \caption{Rotation needed to rotate image coordinate $p^i$ to $p^d$}
     \label{tab:impl_quaternion_rotations}
 \end{table}
 
-Allplying the rotation, alongside Equation~\eqref{theory_polar_coords}, using $[X,Y,Z]^\top=[x^d,y^d,z^d]^\top$, we get the following angles $\phi$ and $\theta$, seen in Equation~\eqref{eq:impl_polar_transform}, which are implemented using the atan2 function from the standard library.
+After rotating the image coordinate to the camera frame, the feature unit vector $[\theta, \phi]$ can be calculated using Equation~\eqref{eq:theory_polar_coords}. This calculation is shown in Equation~\eqref{eq:impl_polar_transform}. The arctangent is implementing using the standard library \emph{atan2(y,x)} function. This provides extra functionality for calculating the quadrant of the angle. The result is therefore in the range $[-\pi,\pi]$, which is needed for correct picture placement.
 
 \begin{subequations}
     \begin{equation}
-        p^d = \begin{bmatrix} x^d \\ y_d \\ z_d \end{bmatrix} = q_{d,i} p^i q_{d,i}^\top
-        \label{eq:impl_polar_transform_quaternion}
-    \end{equation}
-    \begin{equation}
-        \theta = arctan\left(\frac{y^d}{x^d}\right)
+        \theta = arctan\left(\frac{y^c}{x^c}\right)
         \label{eq:impl_polar_transform_theta}
     \end{equation}
     \begin{equation}
-        \phi = arccos\left(\frac{z^d}{\sqrt{(x^d)^2 + (y^d)^2 + (z^d})^2}\right) = arctan\left(\frac{\sqrt{(x^d)^2 + (y^d)^2}}{z^d}\right)
+        \phi = arctan\left(\frac{\sqrt{(x^c)^2 + (y^c)^2}}{z^c}\right)
         \label{eq:impl_polar_transform_phi}
     \end{equation}
     \label{eq:impl_polar_transform}
 \end{subequations}
 
+\subsection{Lens implementation}
 
-The camera lens is implemented with the polynomial model presented in Table~11.1 in \cite{FisheyeCorke}. For now this is implemented as a fourth order polynomial:
+The camera lens is implemented with the polynomial model presented in Table~11.1 in \cite{FisheyeCorke}. For now this is implemented as the fourth order polynomial in Equation~\eqref{eq:impl_lens_model}, where the paramers $k_1$-$k_4$ are tunable distortion parameters. $r(\phi)$ and $\theta$ refer to the polar coordinates of the fisheye image plane, defining the feature position in the fisheye image.
+
+\begin{align}
+    \begin{aligned}[t]
+    r(\phi) &= k_1 \phi + k_2 \phi^2 + k_3 \phi^3 + k_4 \phi^4 \\[0.75ex]
+    \theta &= \theta
+    \end{aligned}
+    \label{eq:impl_lens_model}
+\end{align}
+
+The polynomial model is quite flexible and easy to implement. While it does not support the more complex models, like the equisolid and stereographic models, these may be estimated through taylor expansion. The simple equiangular model used in the theory example in Equation~\eqref{eq:theory_equiangular_coords}, is found by setting $k_1 = f$, $k_2 = k_3 = k_4 = 0$.
+
+In order to produce the final picture the polar coordinates have to be transformed back to pixel coordinates for the new image. Again using $W$ as the width and $H$ as the height in pixels, we can find the transformation by using Equation~\eqref{eq:pixel_transform} as well as the relationship between polar and cartesian coordinates. The resulting transformation is shown in Equation~\eqref{eq:impl_pixel_transform_final}.
 
 \begin{equation}
-    r(\phi) = k_1 \phi + k_2 \phi^2 + k_3 \phi^3 + k_4 \phi^4
-    \label{eq:impl_lens_model}
+    \begin{bmatrix}
+        u \\ v \\ 1
+    \end{bmatrix} = \begin{bmatrix}
+        \frac{W}{2x_{max}} & 0 & \frac{W}{2} \\
+        0 & \frac{H}{2y_{max}} & \frac{H}{2} \\
+        0 & 0 & 1
+    \end{bmatrix}\begin{bmatrix}
+        x \\ y \\ 1
+    \end{bmatrix} =
+    \begin{bmatrix}
+        \frac{W}{2x_{max}} & 0 & \frac{W}{2} \\
+        0 & \frac{H}{2y_{max}} & \frac{H}{2} \\
+        0 & 0 & 1
+    \end{bmatrix}\begin{bmatrix}
+        r(\phi) cos(\theta) \\ r(\phi) sin(\theta) \\ 1
+    \end{bmatrix}
+    \label{eq:impl_pixel_transform_final}
 \end{equation}
 
-Here This allows for a quite flexible distortion model. For example the equiangular model described in Equation~\eqref{eq:fisheye_to_image} is found by setting $k_1 = f$, $k_2 = k_3 = k_4 = 0$. It can be seen from Equation~\eqref{eq:impl_lens_model} that the resolution of must be controlled by:
+It can be seen from Equation~\eqref{eq:impl_lens_model} that the values for $y_{max}$ and $x_{max}$ can be calculated from Equation~\eqref{eq:impl_size_xy_max}, with the maximum FoV is $270^\circ = \left(\frac{3 \pi}{2}\right) rad$. Since the powers of $270$ become extremely large, this value is calculated using radians. Radians is also used in all the other trigonometric calculations for concistency and reducing human errors.
 
 \begin{equation}
     \begin{aligned}
-        u_{max} = v_{max} &> ||k_1 \phi_{max} + k_2 \phi_{max}^2 + k_3 \phi_{max}^3 + k_4 \phi_{max}^4 ||_2 \\
-        &= || 135k_1 + 135^2 k_2 + 135^3 k_3 + 135^4 k_4 ||_2 \\
-        &= \sqrt{(135k_1)^2 + (135^2 k_2)^2 + (135^3 k_3)^2 + (135^4 k_4)^2} \\
-        &< 332.159.737,9 \quad, for \quad k_1,k_2,k_3,k_4 \leq 1 
+        x_{max} = y_{max} &= ||k_1 \phi_{max} + k_2 \phi_{max}^2 + k_3 \phi_{max}^3 + k_4 \phi_{max}^4 ||_2 \\
+        &= \left|\left| \left(\frac{3 \pi}{2}\right)k_1 + \left(\frac{3 \pi}{2}\right)^2 k_2 + \left(\frac{3 \pi}{2}\right)^3 k_3 + \left(\frac{3 \pi}{2}\right)^4 k_4 \right|\right|_2
     \end{aligned}
-    \label{eq:impl_size_criteria}
+    \label{eq:impl_size_xy_max}
 \end{equation}
 
-All numbers integers may be stored within a long int (64 bit) and a double variable will be used for the lens parameters. The upper limit will be set to 1 for the parameters, making sure that the module is able to store the numbers in one variable. While the output picture resolution will be computed and satisfy Equation~\eqref{eq:impl_size_criteria}, it is important to calibrate these parameters according to you own camera. Most likely, $k_1$ will be dominant, as it holds the normal radial distortion.
+% \subsection{Code structure}
+
+% The fisheye module is made to be included as a library into other projects, along with it's header file. The module defines a FisheyeTransformer class and the Lens, SourceImage and TeansformRequest structures. SourceImage contains the one perspective 
+
+% \begin{figure}
+%     \centering
+%     \begin{tikzpicture}[node distance = 4cm, transform shape, scale=1.0]
+%         \tikzstyle{class} = [rectangle, minimum width=3cm, minimum height = 3cm, text centered, draw=black, fill=blue!10]
+%         \tikzstyle{struct} = [rectangle, minimum width=3cm, minimum height = 3cm, text centered, draw=black, fill=green!10]
+        
+%         \node (FET) [class, align=center, rectangle split, rectangle split parts=2]{
+%             \textbf{FisheyeTransformer}
+%             \nodepart{second} \begin{flushleft}+\end{flushleft} test
+%         };
+        
+%     \end{tikzpicture}
+%     \caption{Caption}
+%     \label{fig:my_label}
+% \end{figure} Add this?
 
 \subsection{ROS interface to AirSim and fisheye camera}\label{subsec:ROS_interface}
 
 The ROS interface is split into two different parts: The first part handles AirSim ImageRequests, and the fisheye transformations, while the other handles ROS publishing. The package inherits the base RPC-Client API class defined for AirSim, and does by itself only depend on the client base API implementation, and of course ROS, to create a link between the two. However, for the added functionality of publishing fisheye images, it also depends on the fisheye module, OpenCV and cv\_bridge\footnote{https://github.com/ros-perception/vision\_opencv}. Where cv\_bridge handles the conversion between the OpenCV image object and the ROS image message.
-
-Using the custom setup discussed in Section~\ref{subsec:Fisheye_impl_overview}, the requests for the perspective images are treated by referencing the cameras by name. As of this moment, I have not found a better way to do this, as the AirSim API does not implement polling for available cameras. The received vector of images is then converted to OpenCV images and wrapped into a custom FisheyeImageRequest made for this project. This structure holds the images, image size, and information about the camera pose, which is necessary to compute the final image.
-
-The created ROS node runs an infinite loop, shown in Figure~\ref{fig:impl_ROS_pub_loop}. The loop is interruptable by crtl+c through the ros::ok() function. The loop consists of polling for images, conversion to fisheye image, and publishing the image on the FisheyImage ROS topic. The complete implementation of the ROS interface is unfortunately not finished, meaning that in order to control the multirotor, the old client API needs to be included and used in the client application. Both the ROS publisher and the old client API can be run simultaneously.
 
 \begin{figure}[!htb]
     \centering
@@ -405,6 +413,10 @@ The created ROS node runs an infinite loop, shown in Figure~\ref{fig:impl_ROS_pu
     \caption{ROS publisher loop}
     \label{fig:impl_ROS_pub_loop}
 \end{figure}
+
+Using the custom setup discussed in Section~\ref{subsec:Fisheye_impl_overview}, the requests for the perspective images are treated by referencing the cameras by name. As of this moment, I have not found a better way to do this, as the AirSim API does not implement polling for available cameras. The received vector of images is then converted to OpenCV images and wrapped into a custom FisheyeImageRequest made for this project. This structure holds the images, image size, and information about the camera pose, which is necessary to compute the final image.
+
+The created ROS node runs an infinite loop, shown in Figure~\ref{fig:impl_ROS_pub_loop}. The loop is interruptable by crtl+c through the ros::ok() function. The loop consists of polling for images, conversion to fisheye image, and publishing the image on the FisheyImage ROS topic. The complete implementation of the ROS interface is unfortunately not finished, meaning that in order to control the multirotor, the old client API needs to be included and used in the client application. Both the ROS publisher and the old client API can be run simultaneously.
 
 
 
