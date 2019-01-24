@@ -30,8 +30,8 @@ namespace msr { namespace airlib {
 	// ************ Local Typedefs ******************
 	typedef ImageCaptureBase::ImageRequest ImageRequest;
 	typedef ImageCaptureBase::ImageResponse ImageResponse;
-	typedef FisheyeTransformer::CameraPosition CameraPosition;
-	typedef FisheyeTransformer::SourceImage SourceImage;
+	//typedef FisheyeTransformer::CameraPosition CameraPosition;
+	//typedef FisheyeTransformer::SourceImage SourceImage;
 	// **********************************************
 
 	RosRpcLibClient::RosRpcLibClient(const std::string& ip_address, uint16_t port, float timeout_sec) : RpcLibClientBase(ip_address, port, timeout_sec) {
@@ -97,12 +97,18 @@ int main(int argc, char* argv[]) {
 	char x;
 	std::cout << "Press key!" << std:: endl; std::cin >> x;
 
-	std::vector<FisheyeTransformer::SourceImage> images;
+	std::vector<SourceImage> images;
 
-	const vector<ImageResponse>& responses = c.simGetImages(req.capture_requests);
-	for (auto response : responses) {
+	const std::vector<ImageResponse>& responses = c.simGetImages(req.capture_requests);
+	std::vector<cv::Mat*> mat_ptrs;
+	std::cout << "Images received: " << responses.size() << std::endl;
 
-		cv::Mat temp_img(response.height, response.width, CV_8UC4, response.image_data_uint8.data());
+	for (ImageResponse response : responses) {
+
+		cv::Mat* temp_img = new cv::Mat;
+		*temp_img = cv::Mat(response.height, response.width, CV_8UC4, response.image_data_uint8.data());
+		mat_ptrs.push_back(temp_img);
+
 		CameraPosition pos;
 
 		if (response.camera_name == "forward_center") {
@@ -124,13 +130,21 @@ int main(int argc, char* argv[]) {
 			std::cout << "DOES NOT MATCH NAME!!" << std::endl;
 		}
 
-		FisheyeTransformer::SourceImage img(temp_img, pos, temp_img.size().height, temp_img.size().width);
+		std::cout << temp_img << std::endl;
 
-		images.push_back(img);
+		images.emplace_back(SourceImage(*temp_img, pos, temp_img->size().height, temp_img->size().width));
+	}
+
+	for (int i = 0; i < mat_ptrs.size(); i++) {
+		delete mat_ptrs[i];
+	}
+
+	for (const SourceImage& src : images) {
+		std::cout << &src.image << std::endl;
 	}
 
 	Lens lens;
-	FisheyeTransformer fish(1024, 1024, images[0].height, images[0].width, lens);
+	FisheyeTransformer fish(1024, 1024, images.at(0).height, images.at(0).width, lens);
 	cv::Mat output = fish.transformAndCombine(images);
 
 	cv::namedWindow("edges",1);
