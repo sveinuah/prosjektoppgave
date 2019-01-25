@@ -78,11 +78,11 @@ Using the properties of similar triangles, the relationship between the World co
     \label{eq:pinhole_relation}
 \end{align}
 
-As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the sizes nonlinear. In order to present this in matrix form, the homogenous coordinates $p=[x,y,1]^\top$ and $P=[X,Y,Z,1]^\top$ are used. The matrix transformation is shown in Equation~\eqref{eq:pinhole_matrix}, with the imtermediate step $p^*$ being $p$ scaled by $Z$.
+As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the sizes nonlinear. In order to present this in matrix form, the homogenous coordinates $\mathbf{p}^c=[x,y,1]^\top$ and $\mathbf{P}^c=[X,Y,Z,1]^\top$ are used. The matrix transformation is shown in Equation~\eqref{eq:pinhole_matrix}, with the imtermediate step $\mathbf{p}^c$ being $\mathbf{\Tilde{p}}^c$ scaled by $Z$. The $\bullet^c$ superscript refers to the camera coordinate frame.
 
 \begin{align}
-    p^* &= \begin{bmatrix}
-        x^* \\ y^* \\ z^*
+    \mathbf{\Tilde{p}}^c &= \begin{bmatrix}
+        \Tilde{x}^c \\ \Tilde{y}^c \\ \Tilde{z}^c
     \end{bmatrix} = \begin{bmatrix}
         f & 0 & 0 & 0 \\
         0 & f & 0 & 0 \\
@@ -90,13 +90,11 @@ As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the si
     \end{bmatrix}\begin{bmatrix}
         X \\ Y \\ Z \\ 1
     \end{bmatrix} &
-    p &= \frac{1}{z^*}p^*
+    \mathbf{p}^c &= \frac{1}{\Tilde{z}^i}\mathbf{\Tilde{p}}^c
     \label{eq:pinhole_matrix}
 \end{align}
 
 Since the light rays need to pass through the pinhole and onto the image plane, it is not possible to have a field of view larger than $180^\circ$. As seen in Equation~\eqref{eq:pinhole_matrix}, the projected object is also scaled by the distance to it, causing the points where the vertical field of view is $180^\circ$ to be singular. 
-
-In a digital camera, the image plane consists of a small chip with a discrete amount of light sensitive elements, or pixels. Defining a new pixel coordinate frame to consist of the image pixels, with the origin in the upper left corner, as shown in Figure~\ref{fig:rel_img_pixel}. Using $W$ and $H$ as the image width and height in pixels, the transformation from image coordinates to pixel coordinates will be as shown in Equation~\eqref{eq:pixel_transform}.
 
 \begin{figure}[!htb]
     \centering
@@ -131,14 +129,16 @@ In a digital camera, the image plane consists of a small chip with a discrete am
     \label{fig:rel_img_pixel}
 \end{figure}
 
+In a digital camera, the image plane consists of a small chip with a discrete amount of light sensitive elements, or pixels. Defining a new pixel coordinate frame to consist of the image pixels, with the origin in the upper left corner, as shown in Figure~\ref{fig:rel_img_pixel}. Using $W$ and $H$ as the image width and height in pixels, the transformation from image coordinates to pixel coordinates will be as shown in Equation~\eqref{eq:pixel_transform}, with $\bullet^p$ refering to the pixel coordinate frame, with it's origin in the camera center.
+
 \begin{equation}
-    p^i = \begin{bmatrix}
+    \mathbf{p}^p = \begin{bmatrix}
         u \\ v \\ 1
     \end{bmatrix} = \begin{bmatrix}
         \frac{W}{2x_{max}} & 0 & u_0 \\
         0 & \frac{H}{2y_{max}} & v_0 \\
         0 & 0 & 1
-    \end{bmatrix}p =
+    \end{bmatrix} \mathbf{p}^c =
     \begin{bmatrix}
         \frac{W}{2x_{max}} & 0 & u_0 \\
         0 & \frac{H}{2y_{max}} & v_0 \\
@@ -240,7 +240,7 @@ Using the relationship betwen sperical and cartesian coordinates, $X = Rsin(\phi
     \draw[tdplot_rotated_coords, ->] (0,0,6) -- (0,0,8) node[below]{$z,Z$};
     
     \tdplotsetcoord{P}{6}{65}{150}
-    \draw[] (P) node[above right]{P}; \node at (P){\textbullet};
+    \draw[] (P) node[above right]{$\mathbf{P}$}; \node at (P){\textbullet};
     \draw[] (O) -- (P);
     
     \tdplotsetcoord{ROTORIG}{7}{90}{180}
@@ -533,13 +533,11 @@ As there is no need for angular transformation when projecting $Z$ to $z$, $z$ w
 \end{equation}
 
 
-While the projection of $X$ and $Y$ more or less are equal for most renderer implementations, the projection of $Z$ is highly dependent on the chosen target cube, as well as the orientation of the Z-axis. Using the homogenous scene coordinates $P = [X,Y,Z,1]^\top$ and $p* = [x,y,z,w]^\top$ the transformation can be written as shown in Equation~\eqref{eq:perspective_projmat_temp}. Here $w = Z$ to scale $X$ and $Y$, and needs to be taken into account when calculating the $Z$ projection. Since both clipping planes have the z-axis as a plane normal in both the original scene, as well as the projected cube, $z$ will be independent on $X$ and $Y$ simplifying the computation to the set of two equations shown in Equation~\eqref{eq:perspective_zeqs}.
+While the projection of $X$ and $Y$ more or less are equal for most renderer implementations, the projection of $Z$ is highly dependent on the chosen target cube, as well as the orientation of the Z-axis. Using the homogenous scene coordinates $\mathbf{P} = [X,Y,Z,1]^\top$ and $\mathbf{\Tilde{p}} = [x,y,z,w]^\top$ the transformation can be written as shown in Equation~\eqref{eq:perspective_projmat_temp}. Here $w = Z$ to scale $X$ and $Y$, and needs to be taken into account when calculating the $Z$ projection. Since both clipping planes have the z-axis as a plane normal in both the original scene, as well as the projected cube, $z$ will be independent on $X$ and $Y$ simplifying the computation to the set of two equations shown in Equation~\eqref{eq:perspective_zeqs}.
 
 
 \begin{align}
-    \begin{bmatrix}
-        x \\ y \\ z \\ w
-    \end{bmatrix} = KP = \begin{bmatrix}
+    \mathbf{\Tilde{p}} = \mathbf{K}\mathbf{P} = \begin{bmatrix}
         s & 0 & 0 & 0 \\
         0 & s & 0 & 0 \\
         0 & 0 & K_{33} & K_{34} \\

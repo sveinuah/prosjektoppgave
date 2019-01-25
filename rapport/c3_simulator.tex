@@ -24,7 +24,7 @@ Gazebo is a simulator platform made for robot simulation, with 3D graphics for L
 
 The simulations in Gazebo are built from XML-files describing the world, models that inhabit the world, and the physical properties of each model. The models can be attached to one another through joints and links to create more complex models. Gazebo also provides the ability to add specific behaviour to the simulation through plugins. Plugins are compiled C++ code attached to a specific component, like a model, sensor or world. It is also through these plugins you define ROS behaviour.
 
-The camera sensor implements a perspective camera, giving you access to the typical camera parameters: horizontal FOV, image height, image width, color coding, and near and far clipping plane. Gazebo also comes with support for adding Gaussian noise and distortion to the camera. The distortion is based on Brown's distortion model\todo{cite or add to theory}, which models both radial and tangential distortion effects to the output picture. There are no shutter speed settings, meaning that motion blur and exposure time settings are not naturally supported.
+The camera sensor implements a perspective camera, giving you access to the typical camera parameters: horizontal FOV, image height, image width, color coding, and near and far clipping plane. Gazebo also comes with support for adding Gaussian noise and distortion to the camera. The distortion is based on Brown's distortion model\cite{BrownModel}, which models both radial and tangential distortion effects to the output picture. There are no shutter speed settings, meaning that motion blur and exposure time settings are not naturally supported.
 
 \begin{figure}[!htb]
     \centering

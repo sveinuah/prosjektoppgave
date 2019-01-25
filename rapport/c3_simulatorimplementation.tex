@@ -238,10 +238,10 @@ Figure~\ref{fig:impl_Sphere_projection} shows the setup for the custom cube capt
     \label{fig:impl_Sphere_projection}
 \end{figure}
 
-To provide a correct projection, the angles $\phi$ and $\theta$, shown in Figure~\ref{fig:fisheye_spherical_projection} must be known. In order to convert the pixel positions to these angles, it is beneficial to change to image coordinates on a plane with $x^i,y^i \in [-1,1]$. Here $[x^i, y^i]^\top$ and $[u^i,v^i]^\top$ refer to the image and pixel coordinates on the image plane represented in each camera's own coordinate frame. Table~\ref{tab:impl_quaternion_rotations} on page \pageref{tab:impl_quaternion_rotations} show the respective superscripts used to describe each camera frame. Using Equation~\eqref{eq:pixel_transform}, with each camera having an aspect ratio $\rho = 1$, we get the transformation shown in Equation~\eqref{eq:impl_pixel_inverse_transform}.
+To provide a correct projection, the angles $\phi$ and $\theta$, shown in Figure~\ref{fig:fisheye_spherical_projection} must be known. In order to convert the pixel positions to these angles, it is beneficial to change to image coordinates on a plane with $x^i,y^i \in [-1,1]$. Here $[x^i, y^i]^\top$ and $[u^i,v^i]^\top$ refer to the image and pixel coordinates on the image plane represented, with the origin in each camera's own coordinate frame. Table~\ref{tab:impl_quaternion_rotations} on page \pageref{tab:impl_quaternion_rotations} show the respective superscripts used to describe each camera frame. Using Equation~\eqref{eq:pixel_transform}, with each camera having an aspect ratio $\rho = 1$, we get the transformation shown in Equation~\eqref{eq:impl_pixel_inverse_transform}.
 
 \begin{equation}
-    p^i = \begin{bmatrix}
+    \mathbf{p}^i = \begin{bmatrix}
         x^i \\ y^i \\ 1
     \end{bmatrix} = \begin{bmatrix}
         \frac{W}{2} & 0 & \frac{W}{2} \\
@@ -263,11 +263,11 @@ We define a coordinate frame $\bullet^c$ for the fisheye $360^\circ$ camera to b
 
 \begin{subequations}
     \begin{align}
-        p^c &= \!\begin{aligned}[t]
-            p^d = \begin{bmatrix} x^d \\ y^d \\ z^d \end{bmatrix} &= R^d_i p^i
+        \mathbf{p}^c &= \!\begin{aligned}[t]
+            \mathbf{p}^d = \begin{bmatrix} x^d \\ y^d \\ z^d \end{bmatrix} &= \mathbf{R}^d_i \mathbf{p}^i
         \end{aligned} \label{eq:impl_rotation_R} \\[0.75ex]
-        q^c &= \!\begin{aligned}[t]
-            q^d = \begin{bmatrix} 0 \\ p^d \\ 0 \end{bmatrix} &= (q_{d,i})q^i(q_{d,i})^\top
+        \mathbf{q}^c &= \!\begin{aligned}[t]
+            \mathbf{q}^d = \begin{bmatrix} 0 \\ \mathbf{p}^d \end{bmatrix} &= (\mathbf{q}_{d,i})\mathbf{q}^i(\mathbf{q}_{d,i})^\top
         \end{aligned} \label{eq:impl_rotation_q}
     \end{align}
     \label{eq:impl_rotation}
@@ -278,12 +278,12 @@ The quaternion rotation in Equation~\eqref{eq:impl_rotation_q} will be implement
 \begin{table}[!htb]
     \centering
     \begin{tabular}{|c|c|c|c|} \hline
-        Camera Direction & $p^i$ & $R^d_i = R_{x,\hat{\theta}}(\hat{\theta})R_{y,\hat{\phi}}(\hat{\phi})$ & Quaternion $q_{d,i}$ \\ \hline \hline
-        Down & $p^d$ & $\hat{\theta} = 0$, $\hat{\phi} = 0$ & $[1,0,0,0]^\top$ \\ \hline
-        Front & $p^f$ & $\hat{\theta} = 0$, $\hat{\phi} = -90$ & $[0.707,0,0.707,0]^\top$ \\ \hline
-        Right & $p^r$ & $\hat{\theta} = -90$, $\hat{\phi} = -90$ & $[0.5,-0.5,-0.5,-0.5]^\top$\\ \hline
-        Back & $p^b$ & $\hat{\theta} = 180$, $\hat{\phi} = -90$ & $[0,0.707,0,0.707]^\top$ \\ \hline
-        Left & $p^l$ & $\hat{\theta} = 90$, $\hat{\phi} = -90$ & $[0.5,0.5,-0.5,0.5]^\top$\\ \hline
+        \multirow{2}{*}{Camera Direction} & \multirow{2}{*}{ $\mathbf{p}^i$} & \multirow{2}{*}{$\mathbf{R}^d_i = \mathbf{R}_{x,\hat{\theta}}(\hat{\theta})\mathbf{R}_{y,\hat{\phi}}(\hat{\phi})$} & \multirow{2}{*}{Quaternion $\mathbf{q}_{d,i}$} \\ &&& \\ \hline \hline
+        \multirow{2}{*}{Down} & \multirow{2}{*}{$\mathbf{p}^d$} & \multirow{2}{*}{$\hat{\theta} = 0$, $\hat{\phi} = 0$} & \multirow{2}{*}{$[1,0,0,0]^\top$} \\ &&& \\ \hline
+        \multirow{2}{*}{Front} & \multirow{2}{*}{$\mathbf{p}^f$} & \multirow{2}{*}{$\hat{\theta} = 90$, $\hat{\phi} = 0$} & \multirow{2}{*}{$\left[\frac{\sqrt{2}}{2},\frac{\sqrt{2}}{2},0,0\right]^\top$} \\ &&& \\ \hline
+        \multirow{2}{*}{Right} & \multirow{2}{*}{$\mathbf{p}^r$} & \multirow{2}{*}{$\hat{\theta} = -90$, $\hat{\phi} = -90$} & \multirow{2}{*}{$[0.5,0.5,0.5,0.5]^\top$} \\ &&& \\ \hline
+        \multirow{2}{*}{Back} & \multirow{2}{*}{$\mathbf{p}^b$} & \multirow{2}{*}{$\hat{\theta} = 180$, $\hat{\phi} = -90$} & \multirow{2}{*}{$\left[0,0,\frac{\sqrt{2}}{2},\frac{\sqrt{2}}{2}\right]^\top$} \\ &&& \\ \hline
+        \multirow{2}{*}{Left} & \multirow{2}{*}{$\mathbf{p}^l$} & \multirow{2}{*}{$\hat{\theta} = 90$, $\hat{\phi} = -90$} & \multirow{2}{*}{$\left[0.5,0.5,-0.5,-0.5\right]^\top$} \\ &&& \\ \hline
     \end{tabular}
     \caption{Rotation needed to rotate image coordinate $p^i$ to $p^d$}
     \label{tab:impl_quaternion_rotations}
@@ -303,7 +303,7 @@ After rotating the image coordinate to the camera frame, the feature unit vector
     \label{eq:impl_polar_transform}
 \end{subequations}
 
-\subsection{Lens implementation}
+\subsection{Lens implementation} \label{sec:lens_modeling}
 
 The camera lens is implemented with the polynomial model presented in Table~11.1 in \cite{FisheyeCorke}. For now this is implemented as the fourth order polynomial in Equation~\eqref{eq:impl_lens_model}, where the paramers $k_1$-$k_4$ are tunable distortion parameters. $r(\phi)$ and $\theta$ refer to the polar coordinates of the fisheye image plane, defining the feature position in the fisheye image.
 
@@ -339,12 +339,14 @@ In order to produce the final picture the polar coordinates have to be transform
     \label{eq:impl_pixel_transform_final}
 \end{equation}
 
-It can be seen from Equation~\eqref{eq:impl_lens_model} that the values for $y_{max}$ and $x_{max}$ can be calculated from Equation~\eqref{eq:impl_size_xy_max}, with the maximum FoV is $270^\circ = \left(\frac{3 \pi}{2}\right) rad$. Since the powers of $270$ become extremely large, this value is calculated using radians. Radians is also used in all the other trigonometric calculations for concistency and reducing human errors.
+It can be seen from Equation~\eqref{eq:impl_lens_model} that the values for $y_{max}$ and $x_{max}$ can be calculated from Equation~\eqref{eq:impl_size_xy_max}. Since the maximum FoV is $270^\circ$.  $\phi_{max} = \frac{\theta}{2} = \left(\frac{3 \pi}{4}\right) rad$. This value is calculated with radians, as the powers of $270$ become quite large. Radians is also used in all the other trigonometric calculations for concistency and reducing human errors. 
+
+One important thing to note about the scaling with $x_max$, is that it effectively negates the direct effect of the lens parameters. As an example $r = k_1 \phi$ will provide the same distortion to the image, independent of $k_1$, while in a real camera, changing this would change image area on the CCD. This means that in order to calibrate the simulator to an actual camera, this scaling should be removed. Changing the the relationship between the parameters will still have the wanted effect of changing the distortion.
 
 \begin{equation}
     \begin{aligned}
         x_{max} = y_{max} &= ||k_1 \phi_{max} + k_2 \phi_{max}^2 + k_3 \phi_{max}^3 + k_4 \phi_{max}^4 ||_2 \\
-        &= \left|\left| \left(\frac{3 \pi}{2}\right)k_1 + \left(\frac{3 \pi}{2}\right)^2 k_2 + \left(\frac{3 \pi}{2}\right)^3 k_3 + \left(\frac{3 \pi}{2}\right)^4 k_4 \right|\right|_2
+        &= \left|\left| \left(\frac{3 \pi}{4}\right)k_1 + \left(\frac{3 \pi}{4}\right)^2 k_2 + \left(\frac{3 \pi}{4}\right)^3 k_3 + \left(\frac{3 \pi}{4}\right)^4 k_4 \right|\right|_2
     \end{aligned}
     \label{eq:impl_size_xy_max}
 \end{equation}
