@@ -89,19 +89,19 @@ int main(int argc, char* argv[]) {
 	client.enableApiControl(true);
 	client.armDisarm(true);
 
-	client.takeoffAsync();
-	client.hoverAsync()->waitOnLastTask();
-
+	client.takeoffAsync(5)->waitOnLastTask();
+	client.moveToZAsync(-0.3, 0.3)->waitOnLastTask();
+	//client.hoverAsync()->waitOnLastTask();
+	//client.rotateByYawRateAsync(150,10)->waitOnLastTask();
+	client.moveToPositionAsync(0.0,-1.5,-0.3,0.5)->waitOnLastTask();
+	client.moveByVelocityAsync(0.0,2.0,0.0,10)->waitOnLastTask();
+	
 	ImageCaptureCube::CubeImageRequest req;
-
 	// TESTING ********************************************
 	
-	//ImageRequest request("forward_center", ImageCaptureBase::ImageType::Scene, false, false);
+	//ImageRequest request("left_center", ImageCaptureBase::ImageType::Scene, false, false);
 	//std::vector<ImageRequest> v;
 	//v.push_back(request);
-
-	char x;
-	std::cout << "Press key!" << std:: endl; std::cin >> x;
 
 	std::vector<SourceImage> images;
 
@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	Lens lens(1.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-	FisheyeTransformer fish(1024, 1024, images.at(0).height, images.at(0).width, lens);
+	FisheyeTransformer fish(800, 800, images.at(0).height, images.at(0).width, lens);
 	auto conv_time = std::chrono::system_clock::now();
 	cv::Mat output = fish.transformAndCombine(images);
 	//images.at(0).pos = CameraPosition::DOWN; //For singles
