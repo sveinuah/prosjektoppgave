@@ -28,7 +28,7 @@ Lens::Lens() : Lens(1.0f, 1.0f, 0.0f, 0.0f, 0.0f)
 Lens::~Lens() {}
 
 float Lens::distort(float phi) {
-	return k1* phi; //+k2*pow(phi,2) + k3 * pow(phi,3) + k4 * pow(phi, 4);
+	return k1* phi + k2*pow(phi,2) + k3 * pow(phi,3) + k4 * pow(phi, 4);
 }
 
 
@@ -123,7 +123,8 @@ void FisheyeTransformer::addToImage(const SourceImage& src_img)
 double FisheyeTransformer::calculatePhiMax(const Lens& lens) const {
 
 	// Calculate in small parts
-	double phi_max = 140*M_PI/180.0; //5 deg buffer
+	//double phi_max = 45*M_PI/180.0; //For singles
+	double phi_max = 140*M_PI/180.0; //5 deg buffer for fill cubemap
 
 	double max = lens.k1 * phi_max;
 
