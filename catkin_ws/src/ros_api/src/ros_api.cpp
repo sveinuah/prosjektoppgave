@@ -11,6 +11,7 @@ STRICT_MODE_OFF
 STRICT_MODE_ON
 
 #include <iostream>
+#include <chrono>
 #include <ctime>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
@@ -88,19 +89,24 @@ int main(int argc, char* argv[]) {
 	client.enableApiControl(true);
 	client.armDisarm(true);
 
-	client.takeoffAsync();
-	client.hoverAsync()->waitOnLastTask();
-
+	client.takeoffAsync(5)->waitOnLastTask();
+	client.moveToZAsync(-0.3, 0.3)->waitOnLastTask();
+	//client.hoverAsync()->waitOnLastTask();
+	//client.rotateByYawRateAsync(150,10)->waitOnLastTask();
+	client.moveToPositionAsync(0.0,-1.5,-0.3,0.5)->waitOnLastTask();
+	client.moveByVelocityAsync(0.0,2.0,0.0,10)->waitOnLastTask();
+	
 	ImageCaptureCube::CubeImageRequest req;
-
 	// TESTING ********************************************
 	
-	char x;
-	std::cout << "Press key!" << std:: endl; std::cin >> x;
+	//ImageRequest request("left_center", ImageCaptureBase::ImageType::Scene, false, false);
+	//std::vector<ImageRequest> v;
+	//v.push_back(request);
 
 	std::vector<SourceImage> images;
 
-	std::time_t start = std::time(nullptr);
+	auto start = std::chrono::system_clock::now();
+	//const std::vector<ImageResponse>& responses = c.simGetImages(v);
 	const std::vector<ImageResponse>& responses = c.simGetImages(req.capture_requests);
 	std::vector<cv::Mat*> mat_ptrs;
 	std::cout << "Images received: " << responses.size() << std::endl;
@@ -140,19 +146,21 @@ int main(int argc, char* argv[]) {
 		delete mat_ptrs[i];
 	}
 
-	for (const SourceImage& src : images) {
-		std::cout << &src.image << std::endl;
-	}
-
-	Lens lens;
-	FisheyeTransformer fish(512, 512, images.at(0).height, images.at(0).width, lens);
-	std::time_t conv_time = std::time(nullptr);
+	Lens lens(1.0f, 1.0f, 0.0f, 0.0f, 0.0f);
+	FisheyeTransformer fish(800, 800, images.at(0).height, images.at(0).width, lens);
+	auto conv_time = std::chrono::system_clock::now();
 	cv::Mat output = fish.transformAndCombine(images);
-	std::time_t finished = std::time(nullptr);
+	//images.at(0).pos = CameraPosition::DOWN; //For singles
+	//cv::Mat output = fish.transformSingle(images.at(0)); //For singles
+	auto finished = std::chrono::system_clock::now();
 
-	std::cout << "IMG get: " << conv_time - start << "Seconds" << std::endl;
-	std::cout << "IMG convert: " << finished - conv_time << "Seconds" << std::endl;
-	std::cout << "IMG total: " << finished - start << "Seconds" << std::endl;
+	std::chrono::duration<double> fetch_time = conv_time - start;
+	std::chrono::duration<double> transform_time = finished - conv_time;
+	std::chrono::duration<double> total = fetch_time + transform_time;
+
+	std::cout << "IMG get: " << fetch_time.count() << "Seconds" << std::endl;
+	std::cout << "IMG convert: " << transform_time.count() << "Seconds" << std::endl;
+	std::cout << "IMG total: " << total.count() << "Seconds" << std::endl;
 
 	cv::Mat cvt_img;
 	cv::cvtColor(output, cvt_img, cv::COLOR_RGBA2BGRA);
