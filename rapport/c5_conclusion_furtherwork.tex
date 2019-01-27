@@ -1,5 +1,63 @@
 %===================================== CHAP 5 =================================
 
-\chapter{Conclusion and further work}
+\chapter{Conclusion}
+\section{Conclusion}
+As stated in Section~\ref{chap:introduction}, there are no existing simulators for capturing wide angle images with a FoV larger than 180 degrees today. As the results shows in Section~\ref{sec:Results} proves, this task has been achieved. Utilizing the power of the Unreal Engine, it is also able to capture natural looking images with added effects, caused by light in the real world, such as lens flares, varying light conditions and effects of shadows and reflection. Especially effects as the ones seen in Figure~\ref{fig:res_comp_single} where the camera is exposed to sharp direct light, or how an object detection algorithm would react on an object partially occluded by shadows, are interresting topics that are simulatable on this platform.
+
+While it may have been easier to implement the simulator in a simulator like Gazebo, the added amount of possibilities of CV appllications using Unreal Engine alone, is enough to justify the increased development time, especially as powerful graphics cards become more and more commercially available. Having the available GPU accelereated function library of Unreal Engine may also be beneficial for further advancements to the platform.
+
+As the transformations can be pre-calculated before the simulation starts, there is only one bottleneck left to remove. The fact that the fetching of images can take over half a second, is not applicable for real time simulation. One theory is that the RPC server/client architecture gets overloaded by the amount of picture data that is sent, and therefore creates a bottleneck. If this proves to be true, then the fisheye model needs to be rewritten into the Unreal Engine game loop of AirSim. This might prove beneficial to do anyways, because of the aforementioned function library of Unreal Engine.
+
+The original plan of implementing the simulator as a part of AirSim, rather than a client application, was not achieved due to the authors inexperience with C++, Unreal Engine and AirSim. However choosing to make the fisheye transformer as a client side module enables it to be exported easily to other project which needs this kind picture mapping, as the module itself does not depend on either AirSim or Unreal Engine. This did unfortunately also limit the simulator to not be able to use the functionality of Unreal Engine directly, meaning that all post processing had to be done before the transformation. For most light based effects this is of little consequence. However it turned out that the added noise effects become warped and unnatural looking in the final picture. Another problem that remains to be solves is the motion blur effect, and why it does not work as intended. As seemingly all parametes that could affect this, is set correctly it remains a mystery. Further research into the post processing of Unreal Engine is therefore needed in order to achieve this important feature. 
+
+All in all the results show that the simulator is able to transform perspective images into a realistic looking fisheye image, with a 270 degree FoV. While the simulator still is in its incubacy state, the work presented should provide a suitable framework for further advancements.
+
+\section{Future work}
+
+Even though the possibilities for extensions to this module are nomerous. Some problems has to be fixed first. These include:
+\begin{itemize}
+    \item Finalizing the mapping function for linear time picture transformation
+    \item Removing the bottleneck in the picture fetching stage
+    \item Finding the problem of motion blur
+    \item Adding a noise model that is usable with the fisheye pictures
+\end{itemize}
+
+Dependent of the results of the aforementioned points, there may also be a need to implement the module without the dependency on RPC.
+
+Looking into Graphics programming for graphics accelerated multithread support would be a nice feature, as this may reduce the start up time of the simulator significantly. OpenCL and CUDA are two examples of programing libraries used to do this. While OpenCL supports many different GPU architectures, CUDA only supports NVidia GPUs. In this project almost all matrix calculations and quaternion rotations are computed through Eigen, while the the image specific matrices are handled by OpenCV. Both of these have added support for CUDA and OpenGL. This means that only the program loop itself needs to be parallelized.
+
+While most fisheye lenses are made to create equiangular projections, lenses are not ideal. This means that other distortion effects that are not radial should also be implemented in the simulator. One possibility is to add the unified model proposed by \cite{FisheyeKalibration}. This adds additional dsitortion possibilities as well as also supporting catadioptric lenses.
+
+Both catadioptric and panomorph lenses would be a nice addition to the simulator, that could be added without too much work. The Catadioptric camera need some extra logic for its blind spot, while the panomorph camera most likely could be added, just by implementing the distortion model referenced in the last paragraph.
+
+The Ros publisher is currently quite basic. While it can publish images to the ROS network, that is also everything it is able to do. Implementing multirotor controls into this framework would be preferable. This way one could control the whole simulation from ROS. Adding the supported sesors from AirSim into this publisher node would also add a lot of control application posibilities in the future.
+
+Adding a more modular camera module would be really beneficial. As of now the camera setup needs to be made each time a new vehicle is implemented, where the cameras are tied to that specific vehicle. Using Blueprints to make a standardized camera setup for fisheye capture would be nice, as it would also create a moduar interface for others that may want to improve the platform.
+
+As of now only the multirotor mode of AirSim is supported for fisheye image capture. Adding this functionality to the other vehicles should not be too difficult, now that the platform exists for one vehicle. Of course the addition of the camera setup blueprint mentioned earlier would also help to speed up this process.
+
+The range of vehicles available for AirSim is quite limited. Adding new vehicles, for example a boat and a plane, would widen the applications of the simulator. This is a large task, as this requires both 3D modeling, custom scripting towards Unreal Engine and the creation of new physics to tie into AirSim's already existing framework.
+
+Unreal Engine recently partnered with NVidia during the release of their new graphics hardware to support real-time ray tracing into their platform. Based on their launch event presentation \cite{NvidiaConference}, this will be realized by the integration of so called ray tracing cores, a specialized ray tracing acceleration algorithm and deep learning. Where the deep learning part is specifically made to upscale sparcely ray traced scenes. Folowing this work might be interresting for the future of the platform, as well as the realism of the scenes. This will however not be available for some time.
+
+
 
 \cleardoublepage
+
+% \subsection{Task}
+
+% This project has not been a typical cybernetics project, and in many ways it shares more similarities with a computer science project. While the goal of was to extend the project to incorporate calibrating the fisheye camera to an actual camera, and possiby test computer vision algorithms on the platform, there hasn't been time. This is mainly because of lack of experience in critical areas. 
+
+% The project has had to handle very large code bases. Both the codebase of Unreal Engine and AirSim is quite extensive, as they both provide lots of functionality and features. While both platforms have a large user base, few of these discuss problems around the source code and the communication patterns within. Information regarding this is mostly limited to Github issues, and a few forum posts. While these problems became less relevant when making the client side application, it was a huge part of the development described in Section~\ref{sec:Early_dev}. 
+
+% Since the fisheye model was to be included into the AirSim interface, a deep understanding of the AirSim package was needed. Both in terms of internal dependencies, class and type definitions, coding style and communication patterns. The fact that it also had to incorporate new funtionality fom Unreal Engine meant that knowledge of C++ scripting towards Unreal Engine was needed. As the platform has an enormous amount of tools and funtionality available, there are also a lot of abstractions, to make the interface possible to use and develop for. However, the lack of previous experiece with game engines or Unreal Engine in particular, made this process quite time consuming. While reading through guides and watching tutorials
+
+
+
+% \subsection{Project setup and programming environment}
+
+% In this project I have forked both the EpicGames/Unreal Engine and the Microsoft/AirSim repository to my Github account, and made my own pivate repository for the project. This enable me to do specific changes to the source code of these projects, without the need to make pull requests to their original repositories. While AirSim is openly available, the source code of Unreal Engine is only available after being registered as a developer through their website. One requirement for getting the source code is that it is not distributed outside of this licencing. For this reason neither the fork of Unreal Engine, nor my own project repository are publicly available.
+
+% Since one of the main goals of this project is the interfacing to ROS, the main OS for development will be Linux, specifically Ubuntu 18.04. However, since Unreal Engine is deeply integrated with Visual Studios, I will use Visual Studios on Windows as the main debugging platform, for everything except ROS. To build on Linux, I will use CMake, as they have done with AirSim. Both Unreal Engine and AirSim is built with the clang compiler, using libc++ as the standard library. However, the default ROS install uses libstdc++ as their standard library. This caused linking problems when combining ROS and AirSim. I therefore had to make some changes to the build and CMake scripts of AirSim in order to build with the GNU compiler g++, using libstdc++ as the standard library.
+
+% \todo[inline]{Do I need to describe why this change is important?}

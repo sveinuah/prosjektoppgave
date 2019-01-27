@@ -15,6 +15,8 @@
 \addcontentsline{toc}{chapter}{Abstract}	
 $\\[0.5cm]$
 
-\noindent Write your summary here...
+While there exists many robotics simulators with support for image and video capture, for use in CV applications, quite few of them are able to capture the complex effects of dynamic shadow and light effects in high quality graphic environments. Even fewer are able to realistically model the distortion effects applied by wide angle imageing with a field of view greater than 180 degrees. 
+
+In this project a simulator for capturing omnidirectional fisheye lens distorted images are presented, with the ability to capture pictures with a 270 degree vertical field of view, utilizing Unreal Engine's graphical software as a basis to create and simulate the scenery. The fisheye camera module is built as a client program to the already existing open source AirSim simulator, developed by Microsoft. Taking advantage of their already existing perspective image capture module and multirotor vehicle, five 90 degree field of view cameras are set up underneath, providing a constant stream of perspective images. These images are then mapped to a single fisheye distorted image, with the added possibility to distribute it over a ROS network. As the fisheye camera uses the veratile format of the OpenCV image matrix, this module can also be transferred into other OpenCV projects, with only small changes to the code. 
 
 \clearpage
