@@ -29,8 +29,9 @@ The API AirSim provides consists of a server/client based system, using the RPC\
         \node (cam) [emphblob, above of=Phys, align=center, yshift=0.5cm]{\textbf{Camera} \\ \textbf{Interface}};
         \node (RPCS) [blob, below of=AirSim]{RPC Server};
         \node (RPCC) [blob, below of=RPCS]{RPC Client};
-        \node (Client) [ownblob, below of=RPCC]{ROS Client};
+        \node (Client) [ownblob, below of=RPCC]{Core loop};
         \node (Fish) [ownblob, right of=RPCC, xshift=3cm, align=center]{Fisheye \\ Transform};
+        \node (ROS) [ownblob, left of=RPCC, xshift=-3cm, align=center]{ROS Publisher};
         
         \draw[doublearrow] (UE) -- (AirSim);
         \draw[doublearrow] (UE) -- (Sens);
@@ -42,9 +43,10 @@ The API AirSim provides consists of a server/client based system, using the RPC\
         \draw[tcp] (RPCS) -- (RPCC); \node (tcpText) [left of=RPCC, , xshift=1cm, yshift=1.1cm]{\scriptsize TCP/IP};
         \draw[doublearrow] (RPCC) -- (Client);
         \draw[doublearrow] (Client) -- (Fish);
+        \draw[doublearrow] (Client) -- (ROS);
         
     \end{tikzpicture}
-    \caption{Communication pattern of the fisheye camera simulator. Red nodes belong to the AirSim plugin, while Green nodes are custom made for this project. The emphasized node represent modified AirSim code.}
+    \caption{Simplified code interaction within the simulator. Red nodes belong to the AirSim plugin, while Green nodes are custom made for this project. The emphasized node represent modified AirSim code.}
     \label{fig:comm_pattern}
 \end{figure}
 

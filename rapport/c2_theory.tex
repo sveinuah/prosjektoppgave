@@ -1,5 +1,5 @@
 
-\chapter{Theory}
+\chapter{Background and Theory}
 \section{Modeling of cameras}
 
 Since all cameras project a 3D scene onto a 2D plane, there will be information lost about the depth of the image. It is therefore not possible to calculate the exact placement of an object from a single picture, unless you have extra information about the objects in the picture. For this reason it is easy to create a projection in a 3D scene, but hard to create a scene from a projection. In addition to this, the amount of pixels and the field of view also affect the information and detail in the captured image. The most basic camera model is called the pinhole model, and is applicable for most cameras without high distortion lenses.
@@ -16,7 +16,7 @@ The pinhole model is based on the first camera, the Camera Obscura, made in 1568
         \tdplotsetrotatedcoords{0}{-90}{90}
         \draw[tdplot_rotated_coords, ->] (-0.7,0,0) -- (2,0,0) node[below right]{$X$};
         \draw[tdplot_rotated_coords, ->] (0,-0.5,0) -- (0,1,0) node[right]{$Y$};
-        \draw[tdplot_rotated_coords, dashed] (0,0,-0.5) -- (0,0,9.2);
+        \draw[tdplot_rotated_coords, dashed, opacity=0.7] (0,0,-0.5) -- (0,0,9.2);
         \draw[tdplot_rotated_coords, ->] (0,0,9.2) -- (0,0,10) node[below]{$z,Z$};
         
         \pgfmathsetmacro{\rvec}{8}
@@ -40,10 +40,10 @@ The pinhole model is based on the first camera, the Camera Obscura, made in 1568
         \tdplotsetcoord{IMG4}{\imgradius}{90 -\phivec}{180 + \thetavec}
         \coordinate (IMGC) at (-2.906,0,0);
         
-        \shade[tdplot_rotated_coords, ball color=blue!50, opacity = 0.7] (0,0,8) circle (1cm); 
+        \shade[tdplot_rotated_coords, ball color=blue!50, opacity = 0.9] (0,0,8) circle (1cm); 
 
         \tdplotsetrotatedcoordsorigin{(IMGC)} %\imgradius*sin(90-\phivec)*cos(180-\thetavec)
-        \shade[tdplot_rotated_coords, ball color=blue!50, opacity = 0.7] (0,0,0) circle (0.375);
+        \shade[tdplot_rotated_coords, ball color=blue!50, opacity = 0.9] (0,0,0) circle (0.375);
         \draw[tdplot_rotated_coords, ->] (-0.7,0,0) -- (2,0,0) node[below right]{$x$};
         \draw[tdplot_rotated_coords, ->] (0,-0.5,0) -- (0,1,0) node[right]{$y$};
         
@@ -58,9 +58,9 @@ The pinhole model is based on the first camera, the Camera Obscura, made in 1568
         \draw[thick, opacity = 0.3] (O) -- (P4); \draw[dashed, opacity = 0.3] (P4) -- (longP4);
         
         \tdplotsetthetaplanecoords{180-\thetavec}
-        \tdplotdrawarc[tdplot_rotated_coords]{(O)}{5}{90-\phivec}{90+\phivec}{anchor=west}{$\theta_y$}
+        \tdplotdrawarc[tdplot_rotated_coords]{(O)}{5}{90-\phivec}{90+\phivec}{anchor=west}{$\Theta$}
         \tdplotsetrotatedcoords{0}{\phivec}{90}
-        \tdplotdrawarc[tdplot_rotated_coords]{(O)}{5}{90-\thetavec}{90+\thetavec}{anchor=south}{$\theta_x$}
+        \tdplotdrawarc[tdplot_rotated_coords]{(O)}{5}{90-\thetavec}{90+\thetavec}{anchor=south}{$\Theta_H$}
         
         
     \end{tikzpicture}
