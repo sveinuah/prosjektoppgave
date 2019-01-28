@@ -285,7 +285,7 @@ The largest problem with Unreal Engine is also its strength. There are so many t
 
 Choosing gazebo might have been more time efficient, and would probably have meant that the camera module had been implemented faster, allowing for additional testing and comparisons with real camera setups and calibration techniques. There are also quite many vehicle models already implmented in Gazebo, which could have been used in these experiments, in the same way that AirSim provides. Using AirSim or similar platforms for Gazebo would most likely amount to about to the same workload. However, AirSim has the advantage of implementing a lot of sensors in one package, which has been tried and tested to work together.
 
-\subsection{Implemntation}
+\subsection{Implementation}
 
 Towards the end of the project the module was changed to become a client based module, instead of working as a Part of AirSim. This choice was made, looking at the progress, and the amount of change that was necessary in order to get the module up and running. While this made the platform significantly easier to develop, it also removed the possibility of using many of the advanced features of Unreal Engine. This mainly affects the performance of the module, which will be discussed in Section~\ref{sec:disc_performance}. It also changes the way the module had to be implemented.
 
