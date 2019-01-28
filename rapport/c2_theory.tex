@@ -2,10 +2,10 @@
 \chapter{Background and Theory}
 \section{Modeling of cameras}
 
-Since all cameras project a 3D scene onto a 2D plane, there will be information lost about the depth of the image. It is therefore not possible to calculate the exact placement of an object from a single picture, unless you have extra information about the objects in the picture. For this reason it is easy to create a projection in a 3D scene, but hard to create a scene from a projection. In addition to this, the amount of pixels and the field of view also affect the information and detail in the captured image. The most basic camera model is called the pinhole model, and is applicable for most cameras without high distortion lenses.
+All cameras project a 3D scene onto a 2D plane. This causes information to be lost about the depth of the image. It is therefore not possible to calculate the exact placement of an object from a single picture, unless there is extra information about the objects in the picture. For this reason it is easy to create a projection of a 3D scene, but hard to create a scene from a projection. In addition to this, the amount of pixels and the field of view also affect the information and detail in the captured image. The most basic camera model is called the pinhole model, and is applicable for most cameras without high distortion lenses.
 
-\subsection{pinhole projection} \label{sec:pinhole}
-The pinhole model is based on the first camera, the Camera Obscura, made in 1568. It captures a scene by projecting straight light rays through a common focal point, and through a plane. The projection itself is made from where the light rays intersect the projection plane. The focal length, $f$, and the image plane size will then decide the field of view, $\theta_x$ and $\theta_y$, as shown in Figure~\ref{fig:pinhole}. 
+\subsection{Pinhole projection} \label{sec:pinhole}
+The pinhole model is based on the Camera Obscura, made in 1568. It captures a scene by projecting straight light rays through a common focal point, and through a plane. The projection itself is made from where the light rays intersect the projection plane. The focal length, $f$, and the image plane size will decide the field of view, $\Theta_H$ and $\Theta$, as shown in Figure~\ref{fig:pinhole}. 
 
 \begin{figure}[!htb]
     \centering
@@ -65,12 +65,12 @@ The pinhole model is based on the first camera, the Camera Obscura, made in 1568
         
     \end{tikzpicture}
 
-    \caption{Pinhole projection with the image plane between the focal point and the object}
+    \caption{Pinhole projection with the image plane between the focal point and the object.}
     \label{fig:pinhole}
     
 \end{figure}
 
-Using the properties of similar triangles, the relationship between the World coordinates, $X,Y,Z$ and the image coordinates $x,y$ becomes:
+Using the properties of similar triangles, the relationship between the world coordinates, $X,Y,Z$ and the image coordinates $x,y$ becomes:
 
 \begin{align}
     tan(\phi_x) &= \frac{x}{f} = \frac{X}{Z} & tan(\phi_y) &= \frac{y}{f} = \frac{Y}{Z} \label{eq:pinhole_tan_relation} \\
@@ -78,7 +78,7 @@ Using the properties of similar triangles, the relationship between the World co
     \label{eq:pinhole_relation}
 \end{align}
 
-As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the sizes nonlinear. In order to present this in matrix form, the homogenous coordinates $\mathbf{p}^c=[x,y,1]^\top$ and $\mathbf{P}^c=[X,Y,Z,1]^\top$ are used. The matrix transformation is shown in Equation~\eqref{eq:pinhole_matrix}, with the imtermediate step $\mathbf{p}^c$ being $\mathbf{\Tilde{p}}^c$ scaled by $Z$. The $\bullet^c$ superscript refers to the camera coordinate frame.
+As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the sizes are nonlinear. In order to present this in matrix form, the homogenous coordinates $\mathbf{p}^c=[x,y,1]^\top$ and $\mathbf{P}^c=[X,Y,Z,1]^\top$ are used. The matrix transformation is shown in Equation~\eqref{eq:pinhole_matrix}, with the imtermediate step $\mathbf{p}^c$ being $\mathbf{\Tilde{p}}^c$ scaled by $Z$. The $\bullet^c$ superscript refers to the camera coordinate frame.
 
 \begin{align}
     \mathbf{\Tilde{p}}^c &= \begin{bmatrix}
@@ -94,7 +94,7 @@ As seen in Equation \eqref{eq:pinhole_relation}, the relationship between the si
     \label{eq:pinhole_matrix}
 \end{align}
 
-Since the light rays need to pass through the pinhole and onto the image plane, it is not possible to have a field of view larger than $180^\circ$. As seen in Equation~\eqref{eq:pinhole_matrix}, the projected object is also scaled by the distance to it, causing the points where the vertical field of view is $180^\circ$ to be singular. 
+Since the light rays need to pass through the pinhole and onto the image plane, it is not possible to have a field of view larger than $180^\circ$. As seen in Equation~\eqref{eq:pinhole_matrix}, the projected object is also scaled by the distance, causing the points where the vertical field of view is $180^\circ$ to be singular. 
 
 \begin{figure}[!htb]
     \centering
@@ -125,11 +125,11 @@ Since the light rays need to pass through the pinhole and onto the image plane, 
     
     \end{tikzpicture}
     
-    \caption{Relationship between pixel and image coordinates}
+    \caption{Relationship between pixel and image coordinates.}
     \label{fig:rel_img_pixel}
 \end{figure}
 
-In a digital camera, the image plane consists of a small chip with a discrete amount of light sensitive elements, or pixels. Defining a new pixel coordinate frame to consist of the image pixels, with the origin in the upper left corner, as shown in Figure~\ref{fig:rel_img_pixel}. Using $W$ and $H$ as the image width and height in pixels, the transformation from image coordinates to pixel coordinates will be as shown in Equation~\eqref{eq:pixel_transform}, with $\bullet^p$ refering to the pixel coordinate frame, with it's origin in the camera center.
+In a digital camera, the image plane consists of a small chip with a discrete amount of light sensitive elements, or pixels. A new pixel coordinate frame is defined to consist of the image pixels, with the origin in the upper left corner, as shown in Figure~\ref{fig:rel_img_pixel}. Using $W$ and $H$ as the image width and height in pixels, resspectively, the transformation from image coordinates to pixel coordinates will be as shown in Equation~\eqref{eq:pixel_transform}, with $\bullet^p$ refering to the pixel coordinate frame, with its origin in the camera center.
 
 \begin{equation}
     \mathbf{p}^p = \begin{bmatrix}
@@ -153,7 +153,7 @@ In a digital camera, the image plane consists of a small chip with a discrete am
 
 Wide angle image capture usually refers to pictures taken with a field of view grater than $60^\circ$. Increasing the field of view lets the camera capture more of the scene. However, the details also have to be compressed in order to fit in the image. This creates a trade-off between the amount of the scene captured and the level of detail. Increasing the resolution will reduce the amount of detail lost, but doing so also increases the amount of computation time needed to process the images.
 
-As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to capture elements that are straight to the side or behind the camera. This singularity can also be seen in Figure~\ref{fig:wide_angle_pinhole_nolens}, where the image plane would need to be infinitely big to capture elements at 90 degrees from the center image. In order to reliably capture wide angle pictures, wide angle cameras take advantage of lens distortion. Figure~\ref{fig:wide_angle_pinhole_lens} shows how a lens may be utilized to capture a wide angle picture onto a smaller image plane. The downside of this method is that elements towards the edges of the picture become compressed, causing straight lines to appear curved in the image. This type of distortion is called barrel distortion. Lenses that create barrel distortion in all radial directions from the image center is called a fisheye lens, are used in many wide angle cameras.
+As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to capture elements that are straight to the side or behind the camera. This singularity can also be seen in Figure~\ref{fig:wide_angle_pinhole_nolens}, where the image plane would need to be infinitely big to capture elements at 90 degrees from the center image. In order to reliably capture wide angle pictures, wide angle cameras take advantage of lens distortion. Figure~\ref{fig:wide_angle_pinhole_lens} shows how a lens may be utilized to capture a wide angle picture onto a smaller image plane. The downside of this method is that elements towards the edges of the picture become compressed, causing straight lines to appear curved in the image. This type of distortion is called barrel distortion. Lenses that create barrel distortion in all radial directions from the image center is called a fisheye lens, and are used in many wide angle cameras.
 
 \begin{figure}[!htb]
     \centering
@@ -165,11 +165,11 @@ As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to captu
         
         \draw[] (0,0,0) -- (95:\rvecscene); \draw[] (0,0,0) -- (85:\rvecscene); 
         \draw[] (0,0,0) -- (-95:\rvecimg); \draw[] (0,0,0) -- (-85:\rvecimg);
-        \draw[] (95:0.8*\rvecscene) arc (95:85:0.8*\rvecscene); \draw[] (90:0.9*\rvecscene) node{$10^\circ$};
+        \draw[] (95:0.8*\rvecscene) arc (95:85:0.8*\rvecscene); \draw[] (90:0.9*\rvecscene) node[xshift=-0.5cm]{$10^\circ$};
         
         \draw[] (0,0,0) -- (45:1.414*\rvecscene); \draw[] (0,0,0) -- (35:1.743*\rvecscene); 
         \draw[] (0,0,0) -- (-135:1.414*\rvecimg); \draw[] (0,0,0) -- (-145:1.743*\rvecimg);
-        \draw[] (45:\rvecscene) arc (45:35:\rvecscene); \draw[] (40:1.1*\rvecscene) node{$10^\circ$};
+        \draw[] (45:\rvecscene) arc (45:35:\rvecscene); \draw[] (40:1.1*\rvecscene) node[yshift=-0.6cm]{$10^\circ$};
         
         \draw[] (-4.5,-\rvecimg,0) -- (4.5,-\rvecimg,0);
         \draw[] (3,-\rvecimg + 0.3,0) node[scale=0.8]{image};
@@ -179,7 +179,7 @@ As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to captu
         \draw[] (-3.8, -0.5*\rvecimg,0) node{$f$};
         
     \end{tikzpicture}
-    \caption{Without lens distortion}
+    \caption{Without lens distortion.}
     \label{fig:wide_angle_pinhole_nolens}
     \end{subfigure}
     \begin{subfigure}[b]{0.45\textwidth}
@@ -190,11 +190,11 @@ As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to captu
         
         \draw[] (0,0,0) -- (95:\rvecscene); \draw[] (0,0,0) -- (85:\rvecscene); 
         \draw[] (0,0,0) -- (-95:\rvecimg); \draw[] (0,0,0) -- (-85:\rvecimg);
-        \draw[] (95:0.8*\rvecscene) arc (95:85:0.8*\rvecscene); \draw[] (90:0.9*\rvecscene) node{$10^\circ$};
+        \draw[] (95:0.8*\rvecscene) arc (95:85:0.8*\rvecscene); \draw[] (90:0.9*\rvecscene) node[xshift=-0.5cm]{$10^\circ$};
         
         \draw[] (0,0,0) -- (45:1.414*\rvecscene); \draw[] (0,0,0) -- (35:1.743*\rvecscene); 
         \draw[] (0,0,0) -- (-110:1.064*\rvecimg); \draw[] (0,0,0) -- (-120:1.155*\rvecimg);
-        \draw[] (45:\rvecscene) arc (45:35:\rvecscene); \draw[] (40:1.1*\rvecscene) node{$10^\circ$};
+        \draw[] (45:\rvecscene) arc (45:35:\rvecscene); \draw[] (40:1.1*\rvecscene) node[yshift=-0.6cm]{$10^\circ$};
         
         \draw[] (-2,-\rvecimg,0) -- (2,-\rvecimg,0);
         \draw[] (1.5,-\rvecimg + 0.3,0) node[scale=0.8]{image};
@@ -204,20 +204,20 @@ As described in Section~\ref{sec:pinhole}, pinhole cameras are not able to captu
         \draw[] (-1.5, -0.5*\rvecimg,0) node{$f$};
         
     \end{tikzpicture}
-    \caption{With lens distortion}
+    \caption{With lens distortion.}
     \label{fig:wide_angle_pinhole_lens}
     \end{subfigure}
     
-    \caption{Amount of image space for different parts of the scene, using a pinhole camera, with and without a camera lens}
+    \caption{Amount of image space for different parts of the scene, using a pinhole camera, with and without a camera lens.}
     \label{fig:wide_angle_pinhole}
     
 \end{figure}
 
 \subsection{Fisheye projection}
 
-The lens distortion of a fisheye lens can be visualized and modeled through projecting the scene onto a sphere, and then project that sphere onto an image plane. Spherical coordiantes makes it is easier to describe points in the image plane, as the radial distances on the image plane is directly coupled to the angle a feature makes with the z-axis. Figure~\ref{fig:fisheye_spherical_projection} visualizes the projection, there the red lines represent a constant angle $\phi$.
+The lens distortion of a fisheye lens can be visualized and modeled through projecting the scene onto a sphere, and then project that sphere onto an image plane. Spherical coordiantes makes it is easier to describe points in the image plane, as the radial distances on the image plane is directly coupled to the angle a feature makes with the z-axis. Figure~\ref{fig:fisheye_spherical_projection} visualizes the projection, where the red lines represent a constant angle $\phi$.
 
-Using the relationship betwen sperical and cartesian coordinates, $X = Rsin(\phi)cos(\theta)$, $Y = Rsin(\phi)sin(\theta)$ and $Z = Rcos(\phi)$, the polar coordinates $[R,\theta,\phi]^\top$ become:
+Using the relationship between spherical and cartesian coordinates, $X = Rsin(\phi)cos(\theta)$, $Y = Rsin(\phi)sin(\theta)$ and $Z = Rcos(\phi)$, the polar coordinates $[R,\theta,\phi]^\top$ become:
 
 \begin{equation}
     \begin{aligned}
@@ -290,11 +290,11 @@ Using the relationship betwen sperical and cartesian coordinates, $X = Rsin(\phi
     
     \end{tikzpicture}
     
-    \caption{Equiangular fisheye lens projection. Focal length exagerated for visual purposes.}
+    \caption{Equiangular fisheye lens projection. Focal length exaggerated for visual purposes.}
     \label{fig:fisheye_spherical_projection}
 \end{figure}
 
-In order to project the unit sphere onto a plane, there are different models. All of these describe different lens types, and by this gives the distortion model for a fisheye camera. Table~\ref{tab:theory_fisheye_lens_model} shows four different lens models used for fisheye cameras. the $r(\phi)$ represents the distance from the image center in the fisheye image plane. the relationship between the polar image coordinates $[r(\phi), \theta]^\top$ and the image coordinates $[x,y]^\top$ in Figure~\ref{fig:fisheye_spherical_projection}, can be seen in Equation~\eqref{eq:theory_equiangular_coords}. The mapping to pixel coordinates $[u,v]^\top$ is the same as described in Equation~\eqref{eq:pixel_transform}, where $x_max$ and $y_max$ is decided by $||r(\phi)||_2$.
+In order to project the unit sphere onto a plane, different models exist. All of these describe different lens types, providing different distortions models for the fisheye camera. Table~\ref{tab:theory_fisheye_lens_model} shows four different lens models used for fisheye cameras. The $r(\phi)$ represents the distance from the image center in the fisheye image plane. the relationship between the polar image coordinates $[r(\phi), \theta]^\top$ and the image coordinates $[x,y]^\top$ in Figure~\ref{fig:fisheye_spherical_projection}, can be seen in Equation~\eqref{eq:theory_equiangular_coords}. The mapping to pixel coordinates $[u,v]^\top$ is the same as described in Equation~\eqref{eq:pixel_transform}, where $x_max$ and $y_max$ is decided by $||r(\phi)||_2$.
 
 \begin{align}
     r(\phi) &= f \cdot \phi & \theta &= \theta \nonumber \\
@@ -302,10 +302,12 @@ In order to project the unit sphere onto a plane, there are different models. Al
     \label{eq:theory_equiangular_coords}
 \end{align}
 
-There are multiple different lens model for fisheye cameras. The Equiangular used in the above example is the simplest, and only incorporates radial distortion. In \cite{FisheyeCorke}, the models shown in Table~\ref{tab:theory_fisheye_lens_model} are presented. Another type of model is shown in Matlab's calibration guide for fisheye lens cameras\cite{MatlabFish}. This guide uses a model presented in \cite{FisheyeKalibration}, in addition to the ability to apply a stretch matrix and set distortion center. This model therefore provides much more customizability.
+The equiangular used in the above example is the simplest, and only incorporates radial distortion. In \cite{FisheyeCorke}, the models shown in Table~\ref{tab:theory_fisheye_lens_model} are presented. Another type of model is shown in Matlab's calibration guide for fisheye lens cameras\cite{MatlabFish}. This guide uses a model presented in \cite{FisheyeKalibration}, in addition to the ability to apply a stretch matrix and set distortion center. This model therefore provides much more customizability.
 
 \begin{table}[!htb]
     \centering
+    \caption{Four different lens models for fisheye projection.}
+    \label{tab:theory_fisheye_lens_model}
     \begin{tabular}{|c|c|} \hline
         Lens model & radius $r(\phi)$ \\ \hline
         Equiangular & $k_1\phi$\\ \hline
@@ -313,8 +315,6 @@ There are multiple different lens model for fisheye cameras. The Equiangular use
         Equisolid & $k_1 sin\left(\frac{\phi}{2}\right)$\\ \hline 
         Polynomial & $k_1 \phi + k_2 \phi^2 + ...$\\ \hline
     \end{tabular}
-    \caption{Four different lens models for fisheye projection}
-    \label{tab:theory_fisheye_lens_model}
 \end{table}
 
 \subsection{Cylindrical projection}
@@ -333,42 +333,42 @@ The goal of the cylindrical projection and camera types is to reduce the radial 
 \label{eq:cylindrical}
 \end{subequations}
 
-Theoretically this representation removes all vertical radial distortion, however it is still subject to the introduction of distortion through imperfect lenses or image plane alignment. Using the same vertical mapping as the pinhole model, also limits the vertical field of view, in the same manner as it would for the pinhole camera. Cameras using this projection types are not that common. This projection type is however highly suited to project and stitch pictures taken by a camera rotating around an axis, and is frequently used in panorama capture modes on digital cameras or mobile phones.
+Theoretically this representation removes all vertical radial distortion. However, it is still subject to the introduction of distortion through imperfect lenses or image plane alignment. Using the same vertical mapping as the pinhole model also limits the vertical field of view in the same manner as it would for the pinhole camera. Cameras using this projection types are not that common. However, this projection type is highly suited to project and stitch pictures taken by a camera rotating around an axis, and is frequently used in panorama capture modes on digital cameras or mobile phones.
 
 \subsection{Catadioptric projection}
 
-Using internal mirrors to reflect the light, catadioptric lenses can achieve large focal lengths without increasing the physical length of the objective. This makes the technology ideal for telescopes and narrow angle imaging. The same principle has however been developed to include large field of view cameras and panoramic imaging, as seen in \cite{CatadioptricOmni}. 
+Using internal mirrors to reflect the light, catadioptric lenses can achieve large focal lengths without increasing the physical length of the objective. This makes the technology ideal for telescopes and narrow angle imaging. The same principle has been developed to include large field of view cameras and panoramic imaging, as seen in \cite{CatadioptricOmni}. 
 
 \begin{figure}[!htb]
     \centering
     \includegraphics[width=0.6\textwidth]{rapport/fig/Theory/cata.jpeg}
-    \caption{A simple catadiotric lens showing the central mirror, producing the blind spot. Downloaded from steemit.com/photography/@xenon2/catadioptric-lenses-old-is-new-again}
+    \caption{A simple catadiotric lens showing the central mirror, producing the blind spot \cite{CataImage}.}
     \label{fig:theory_catadioptric_lens}
 \end{figure}
 
-Figure~\ref{fig:theory_catadioptric_lens} shows a simplified catadioptric mirror setup. Here we see that the mirror has to be placed within the field of view. This means that the catadioptric lens will always cause a blind spot. Shadows of the mirror mount may also appear in the image. To reduce this effect, the mount has to be made quite fragile. This makes the cameras unsuited for applications with significant vibrations.
+Figure~\ref{fig:theory_catadioptric_lens} shows a simplified catadioptric mirror setup. Here it can be seen that the mirror has to be placed within the field of view. This means that the catadioptric lens will always cause a blind spot. Shadows of the mirror mount may also appear in the image. To reduce this effect, the mount has to be made quite fragile. This makes the cameras unsuited for applications with significant vibrations.
 
-The pixel mapping and field of view is highly dependent on the reflective surface used. Most surfaces will introduce similar radial distortions to the fisheye lens, but there has been developed catadioptric lenses, producing rectilinear projections \cite{RectilinearCatadioptric}, however this has to be mounted at a fixed distance from the ground, making them unfit for moving objects. Nayar S. K. made a wide angle, catadioptric lens \cite{CatadioptricOmni} with a single viewpoint, and proposes further a setup where two of these are mounted back to back to produce a full spherical image.
+The pixel mapping and field of view is highly dependent on the reflective surface used. Most surfaces will introduce similar radial distortions to the fisheye lens, but there has been developed catadioptric lenses producing rectilinear projections \cite{RectilinearCatadioptric}. However, this has to be mounted at a fixed distance from the ground, making them unfit for moving objects. Nayar S. K. made a wide angle, catadioptric lens \cite{CatadioptricOmni} with a single viewpoint, and proposes further a setup where two of these are mounted back to back to produce a full spherical image.
 
 \subsection{Panomorph projection}
 
-The panomorph lens types are designed around an non-uniform distribution of pixels within the field of view, and is patented by ImmerVision. This creates an opportunity to focus on important parts of the field of view, and enhance the resolution in these parts. This can couteract the problems wide angle cameras have with the reduces angular resolution, without increasing the image resolution. The non-uniform pixel distribution can also be tweaked to use more of the image sensors area \cite{PanomorphLowCostSurvailance}, and therefore utilizing more of the available resolution.
+The panomorph lens types are designed around an non-uniform distribution of pixels within the field of view, and is patented by ImmerVision. This creates an opportunity to focus on important parts of the field of view, and enhance the resolution in these parts. This can counteract the problems wide angle cameras have with the reduced angular resolution, without increasing the image resolution. The non-uniform pixel distribution can also be tweaked to use more of the image sensors area \cite{PanomorphLowCostSurvailance}, and therefore utilize more of the available resolution.
 
-Different types of panomorphic lenses has been proposed for different applications. For example in 2010 it was proposed to use a panomorph lens in endoscopy\cite{endoscopypano}. This lens is based on the human eye, and its increased resolution around the center of vision. Other aplications include security cameras\cite{PanomorphEnhancesSurvailance}, where the outlying areas has been given increased resolution, to counteract the compact representation provided by normal fisheye cameras.
+Different types of panomorphic lenses has been proposed for different applications. In 2010 it was proposed to use a panomorph lens in endoscopy\cite{endoscopypano}. This lens is based on the human eye, and has increased resolution around the center of vision. Other aplications include security cameras\cite{PanomorphEnhancesSurvailance}, where the outlying areas has been given increased resolution, to counteract the compact representation provided by normal fisheye cameras.
 
-Since the pixel density varies within the field of view, the lens is more difficult to construct as well as model. As it closely resembles the fisheye lens, one could possibly achieve a quite good calibration using the polynomial model in \ref{tab:theory_fisheye_lens_model} or the unified model presented in \cite{FisheyeKalibration}. As they both support nonlinear radial distortion. The polynomial model would however need to be augmented with stretch parameters.
+The panomorph lens is both harder to construct as well as model, due to its uneven pixel distribution within the FoV. As it closely resembles the fisheye lens, one could possibly achieve a quite good calibration using the polynomial model in \ref{tab:theory_fisheye_lens_model}, or the unified model presented in \cite{FisheyeKalibration}, as they both support nonlinear radial distortion. The polynomial model would need to be augmented with stretch parameters, however.
 
 \section{Computer graphics}
 
-Our eyes and cameras capture the 3D world from light hitting photosensitive elements. An object directly or partly behind another object will therefore be hidden in the picture, unless captured by a reflection. In addition to this, shadows, colors and lighting of objects in the scene are all based on how the light rays bounce around in the room, and eventually hit the camera lens. In computer graphics, there is no inherent concept of light. This means that all the effects that are based around light must be estimated or simulated. Since calculating light and shadow effects are quite expensive computationally, it is not uncommon to add shadow elements directly to the object texture, in order to optimize the for speed.
+Our eyes and cameras capture the 3D world from light hitting photosensitive elements. An object directly or partly behind another object will therefore be hidden in the picture, unless captured by a reflection. In addition to this, shadows, colors and lighting of objects in the scene are all based on how the light rays bounce around in the room, and eventually hit the camera lens. In computer graphics, there is no inherent concept of light. This means that all the effects that are based around light must be estimated or simulated. Since calculating light and shadow effects are quite expensive computationally, it is not uncommon to add shadow elements directly to the object texture, in order to optimize for speed.
 
-There are two main approaches: One approach is Ray tracing, which simulates light rays as they travel in straight lines from the camera center, through a pixel. When a ray hits an object, the ray is split in two, creating a shadow ray following the same trajectory through the object, and a reflection ray following the reflection trajectory. Ultimately these rays will find a light source, leave the scene. Usually the rays are limited to a number of bounces, to save some computation. This technique is incredibly powerful, and is used heavily in CGI effects for film making. However, the amount of computation necessary makes it hard to incorporate this in real-time applications.
+There are two main approaches. One approach is Ray tracing, which simulates light rays as they travel in straight lines from the camera center, through a pixel. When a ray hits an object, the ray is split in two, creating a shadow ray following the same trajectory through the object, and a reflection ray following the reflection trajectory. Ultimately these rays will either find a light source, or leave the scene. Usually the rays are limited to a specific number of bounces to save some computation time. This technique is incredibly powerful, and is used heavily in Computer Graphics Imagery(CGI) for film making. However, the amount of computation necessary makes it hard to incorporate this in real-time applications.
 
-The other approach is often referred to as rasterization, and is the one used most in real-time applications. Rasterization is a step in a larger pipeline of graphics computations, choosing which element to draw to which pixel. The main advantage Razterization has is it's short computation time and ability to be parallelized. As processing speed is very important in real time graphics production, and has also driven the graphics cards to be as effective as they are today. The downside of rasterization is that it looses a lot of information about the lighting in the scene, providing the shader much less information for the final coloring.
+The other approach is often referred to as rasterization, and is the one used the most in real-time applications. Rasterization is a step in a larger pipeline of graphics computations, choosing which element to draw to which pixel. The main advantage of razterization is its short computation time and ability to be parallelized, as processing speed is very important in real time graphics production. The efficiency of rasterization has also driven the graphics cards to be as effective as they are today. The downside of rasterization is that it loses a lot of information about the lighting in the scene, providing the shader much less information for the final coloring.
 
 \subsection{Graphics projection}
 
-Before the rasterization and the coloring(shading) of the pixels can be done, one must solve the visibility problems. This is one of the main difficulties in graphics programming. In simple terms, this consists of two tasks: \emph{Clipping}, which is the process of removing the parts that are outside the FoV, and \emph{Culling}, the process of deciding what is visible to the camera. While clipping of the FoV is straight forward, culling is not. The problem comes with transparency and reflections, where objects that are behind others, should still be visible or contribute to the final pixel color. 
+Before the rasterization and the coloring(shading) of the pixels can be done, the visibility problems must be solved. This is one of the main difficulties in graphics programming. In simple terms, this consists of two tasks: \emph{Clipping}, which is the process of removing the parts that are outside the FoV, and \emph{Culling}, the process of deciding what is visible to the camera. While clipping of the FoV is straight forward, culling is not. The problem comes with transparency and reflections, where objects that are behind others, should still be visible or contribute to the final pixel color. 
 
 In order to do these tasks effeciently, and to be able to use the same algorithms on different projection types, the scene is first projected into a normalized volume. This means that a projection in computer graphics is referencing a volume tranformation in $\mathbb{R}^3$, instead of a tranformation from $\mathbb{R}^3 \rightarrow \mathbb{R}^2$, which is referenced in the case of camera projections. The final transformation to an image plane happen in the rasterization and shading algorithm.
 
@@ -376,7 +376,7 @@ There are two main projection types used: orthographic and perspective. Orthogra
 
 \subsection{Perspective projection}
 
-The goal of perspective projection is to compress the scene into a normalized volume, while conserving the perspective properties. This means that object sizes are scaled with distance, the same way as in a pinhole camera. In Figure~\ref{fig:perspective_proj_yz}, a side view of this process is shown, in the yz-plane. The image shows two points $a$ and $b$, as well as their projected counterparts $a^*$ and $b^*$ in the normalized volume. $\Theta$ is in this case the vertical FoV.
+The goal of perspective projection is to compress the scene into a normalized volume, while conserving the perspective properties. This means that object sizes are scaled with distance, the same way as in a pinhole camera. In Figure~\ref{fig:perspective_proj_yz}, a side view of this process is shown, in the yz-plane. The image shows two points, $a$ and $b$, as well as their projected counterparts, $a^*$ and $b^*$, in the normalized volume. $\Theta$ is in this case the vertical FoV.
 
 \begin{figure}[!htb]
     \centering
@@ -421,18 +421,18 @@ The goal of perspective projection is to compress the scene into a normalized vo
             \draw[tdplot_rotated_coords] (0,-2.3) -- (0,-2.1); \draw[tdplot_rotated_coords] (4,-2.3) -- (4,-2.1);
             
         \end{tikzpicture}
-    \caption{plane view of a perspective projection, with $a^*,b^*$ being the projected version of $a,b$}
+    \caption{plane view of a perspective projection, with $a^*,b^*$ being the projected version of $a,b$.}
     \label{fig:perspective_proj_yz}
 \end{figure}
 
-One important thing to note is the distances $d_n$ and $d_f$ these refer to the near and far clipping plane. These two parameter along with the FoV defines the volume which should be projected, and is shown in Figure~\ref{fig:theory_perspective_projection_volume}. As view distance greatly affects the amount of data that has to be processed, these parameters can be set in order to tell the renderer how near and how far to look. The roles of these parameters in the projection will be described later in this Section.
+One important thing to note are the distances $d_n$ and $d_f$, which refer to the near and far clipping plane. These two parameters along with the FoV defines the volume which should be projected, and is shown in Figure~\ref{fig:theory_perspective_projection_volume}. As view distance greatly affects the amount of data that has to be processed, these parameters can be set in order to tell the renderer how near and how far to look. The roles of these parameters in the projection will be described later in this section.
 
-The relationship between the FoV and near clipping plane distance $d_n$ follows the same principle as for cameras, where $d_n$ can be seen as the focal length. This means that the FoV $\Theta$ is directly linked to $d_n$ and the size of the clipping plane. As seen in Figure~\ref{fig:perspective_proj_yz}, both point $a$ and $b$ are projected to $y=1$. Using the perspective relation of scale from Equation~\eqref{eq:pinhole_tan_relation}, and the scale parameter $s$, we find the relation between $y$ and $Y$, as shown in Equation~\eqref{eq:theory_perspective_y}. Here $a_y$ and $b_y$ are the y coordinates of $a$ and $b$.
+The relationship between the FoV and near clipping plane distance, $d_n$, follows the same principle as for cameras, where $d_n$ can be seen as the focal length. This means that the FoV, $\Theta$, is directly linked to $d_n$ and the size of the clipping plane. As seen in Figure~\ref{fig:perspective_proj_yz}, both point $a$ and $b$ are projected to $y=1$. Using the perspective relation of scale from Equation~\eqref{eq:pinhole_tan_relation}, and the scale parameter $s$, we find the relation between $y$ and $Y$, as shown in Equation~\eqref{eq:theory_perspective_y}. Here $a_y$ and $b_y$ are the y coordinates of $a$ and $b$.
 
 \begin{equation}
     \begin{aligned}
-        1 = y = s \frac{Y}{Z} = s \frac{a_y}{d_n} &= s \frac{b_y}{d_f} = s \cdot tan\left(\frac{\Theta}{2}\right) \quad ,for \quad \theta = \Theta \\\\
-        \Rightarrow s &= \frac{1}{tan\left(\frac{\Theta}{2}\right)}
+        1 = y = s \frac{Y}{Z} = s \frac{a_y}{d_n} &= s \frac{b_y}{d_f} = s \cdot tan\left(\frac{\Theta}{2}\right) \hfil,for \quad \theta = \Theta \\\\
+        \Rightarrow s &= \frac{1}{tan\left(\frac{\Theta}{2}\right)} &&
         \label{eq:theory_perspective_y}
     \end{aligned}
 \end{equation}
@@ -441,7 +441,7 @@ To describe the projection of $X$ we may use the aspect ratio to form a relation
 
 
 \begin{equation}
-    tan\left(\frac{\Theta_H}{2}\right) = \frac{W}{H}tan\left(\frac{\Theta}{2}\right) = \frac{1}{\rho}tan\left(\frac{\Theta}{2}\right) \quad , for \quad \rho = \frac{Height}{Width}
+    tan\left(\frac{\Theta_H}{2}\right) = \frac{W}{H}tan\left(\frac{\Theta}{2}\right) = \frac{1}{\rho}tan\left(\frac{\Theta}{2}\right) \hfill, for \quad \rho = \frac{Height}{Width}
     \label{eq:theory_FOV_relationship}
 \end{equation}
 \begin{equation}
@@ -514,48 +514,49 @@ To describe the projection of $X$ we may use the aspect ratio to form a relation
         
         
     \end{tikzpicture}
-    \caption{Perspective projection Showing the projected scene volume}
+    \caption{Perspective projection showing the projected scene volume.}
     \label{fig:theory_perspective_projection_volume}
 \end{figure}
 
 In pinhole projection, the scaling caused by the distance $Z$ is implemented into the model through homogeneous coordinates. The same principle will be used for this projection. However, since the coordinate $z \in [-1,1]$ in the target volume, an additional parameter $w$ must be added. In order to provide the correct scale to the transformation, $w$ is set to equal $Z$. This can be seen on the bottom line of the projection matrix in Equation~\eqref{eq:perspective_projmat_temp}.
 
-As there is no need for angular transformation when projecting $Z$ to $z$, $z$ will only depend on $Z$ and the scaling due to $w$. Knowing that the near clipping plane should be projected to $z=-1$, and the far clipping plane to $z=1$, we can make the system of equations shown in Equation~\eqref{eq:perspective_zeqs}. Here $K_{33}$ and $K_{34}$ refer to elements in the projection matrix $K$ in Equation~\eqref{eq:perspective_projmat_temp}. The pre-multiplication of $Z$ on the left and side of the equal sign is to incorporate the scaling of the homogeneous vector.
+As there is no need for angular transformation when projecting $Z$ to $z$, $z$ will only depend on $Z$ and the scaling due to $w$. Knowing that the near clipping plane should be projected to $z=-1$, and the far clipping plane to $z=1$, the system of equations shown in Equation~\eqref{eq:perspective_zeqs}can be made. $K_{33}$ and $K_{34}$ refer to elements in the projection matrix $K$ in Equation~\eqref{eq:perspective_projmat_temp}. The pre-multiplication of $Z$ on the left and side of the equality sign is to incorporate the scaling of the homogeneous vector.
+\begin{equation}
+    \begin{aligned}
+        \mathbf{\Tilde{p}} &= \mathbf{K}\mathbf{P} = \begin{bmatrix}
+            s & 0 & 0 & 0 \\
+            0 & s & 0 & 0 \\
+            0 & 0 & K_{33} & K_{34} \\
+            0 & 0 & 1 & 0
+        \end{bmatrix} \begin{bmatrix}
+            X \\ Y \\ Z \\ 1
+        \end{bmatrix} = \begin{bmatrix}
+            \frac{\rho}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 & 0 \\
+            0 & \frac{1}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 \\
+            0 & 0 & \frac{d_n+d_f}{d_f-d_n} & \frac{2d_n d_f}{d_f-d_n} \\
+            0 & 0 & 1 & 0
+        \end{bmatrix} \begin{bmatrix}
+            X \\ Y \\ Z \\ 1
+        \end{bmatrix} \\
+        \Theta &= Vertical FoV
+    \end{aligned}
+    \label{eq:perspective_projmat_temp}
+\end{equation}
+
+
+While the projection of $X$ and $Y$ more or less are equal for most renderer implementations, the projection of $Z$ is highly dependent on the chosen target cube, as well as the orientation of the Z-axis. Using the homogenous scene coordinates $\mathbf{P} = [X,Y,Z,1]^\top$ and $\mathbf{\Tilde{p}} = [x,y,z,w]^\top$ the transformation can be written as shown in Equation~\eqref{eq:perspective_projmat_temp}. Here $w = Z$ to scale $X$ and $Y$, and needs to be taken into account when calculating the $Z$ projection. Since both clipping planes have the z-axis as a plane normal in both the original scene, as well as the projected cube, $z$ will be independent on $X$ and $Y$ which simplifyies the computation to the set of two equations shown in Equation~\eqref{eq:perspective_zeqs}.
 
 \begin{equation}
     \begin{aligned}
         zZ &= K_{33} Z + K_{34} &\\
-        zd_n &= K_{33} d_n + K_{34} &, for \quad Z &= d_n \\
-        zd_f &= K_{33} d_f + K_{34} &, for \quad Z &= d_f \\
-        \Rightarrow K_{33} &= \frac{n+f}{n-f} & \quad \Rightarrow K_{34} &= \frac{2nf}{n-f}
+        zd_n &= K_{33} d_n + K_{34} \hfill, for \quad Z = d_n \\
+        zd_f &= K_{33} d_f + K_{34} \hfill, for \quad Z = d_f \\
+        \Rightarrow K_{33} &= \frac{n+f}{n-f} \quad \Rightarrow K_{34} = \frac{2nf}{n-f}
     \end{aligned}
     \label{eq:perspective_zeqs}
 \end{equation}
 
-
-While the projection of $X$ and $Y$ more or less are equal for most renderer implementations, the projection of $Z$ is highly dependent on the chosen target cube, as well as the orientation of the Z-axis. Using the homogenous scene coordinates $\mathbf{P} = [X,Y,Z,1]^\top$ and $\mathbf{\Tilde{p}} = [x,y,z,w]^\top$ the transformation can be written as shown in Equation~\eqref{eq:perspective_projmat_temp}. Here $w = Z$ to scale $X$ and $Y$, and needs to be taken into account when calculating the $Z$ projection. Since both clipping planes have the z-axis as a plane normal in both the original scene, as well as the projected cube, $z$ will be independent on $X$ and $Y$ simplifying the computation to the set of two equations shown in Equation~\eqref{eq:perspective_zeqs}.
-
-
-\begin{align}
-    \mathbf{\Tilde{p}} = \mathbf{K}\mathbf{P} = \begin{bmatrix}
-        s & 0 & 0 & 0 \\
-        0 & s & 0 & 0 \\
-        0 & 0 & K_{33} & K_{34} \\
-        0 & 0 & 1 & 0
-    \end{bmatrix} \begin{bmatrix}
-        X \\ Y \\ Z \\ 1
-    \end{bmatrix} = \begin{bmatrix}
-        \frac{\rho}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 & 0 \\
-        0 & \frac{1}{tan\left(\frac{\Theta}{2}\right)}& 0 & 0 \\
-        0 & 0 & \frac{d_n+d_f}{d_f-d_n} & \frac{2d_n d_f}{d_f-d_n} \\
-        0 & 0 & 1 & 0
-    \end{bmatrix} \begin{bmatrix}
-        X \\ Y \\ Z \\ 1
-    \end{bmatrix}
-    \label{eq:perspective_projmat_temp}
-\end{align}
-
-In an ideal setting, there should be no need for a far clipping plane, meaning that all objects in the distance are drawn, no matter how far away they are. While this may differ from renderer to renderer, some implement funcionality for letting the the far clipping plane approach infinity. Equation~\eqref{eq:theory_inf_far_clip} how this can be implemented for the perspective projection, by letting $d_f \rightarrow \infty$. The final projection matrix is shown in Equation~\eqref{eq:theory_inf_proj_mat}.
+In an ideal setting, there should be no need for a far clipping plane, meaning that all objects in the distance are drawn, no matter how far away they are. While this may differ from renderer to renderer, some implement funcionality for letting the the far clipping plane approach infinity. Equation~\eqref{eq:theory_inf_far_clip} shows how this can be implemented for the perspective projection, by letting $d_f \rightarrow \infty$. The final projection matrix is shown in Equation~\eqref{eq:theory_inf_proj_mat}.
 
 \begin{equation}
     \begin{aligned}
@@ -564,20 +565,20 @@ In an ideal setting, there should be no need for a far clipping plane, meaning t
     \frac{1}{1} = 1 \\
     K_{34} = \lim_{f \rightarrow \infty} -\frac{2d_n d_f}{d_f-d_n} = 
     \lim_{d_f \rightarrow \infty} -\frac{2d_n}{1-\frac{d_n}{d_f}} =
-    -\frac{2n}{1} = -2n
+    -\frac{2d_n}{1} = -2d_n
     \end{aligned}
     \label{eq:theory_inf_far_clip}
 \end{equation}
 
 \begin{equation}
     \begin{bmatrix}
-        \frac{\rho}{arctan(\Theta/2)} & 0 & 0 & 0 \\
-        0 & \frac{1}{arctan(\Theta/2)} & 0 & 0 \\
+        \frac{\rho}{tan(\Theta/2)} & 0 & 0 & 0 \\
+        0 & \frac{1}{tan(\Theta/2)} & 0 & 0 \\
         0 & 0 & K_{33} & K_{34} \\
         0 & 0 & 1 & 0 
     \end{bmatrix} = \begin{bmatrix}
-        \frac{1}{arctan(\theta/2)} & 0 & 0 & 0 \\
-        0 & \frac{1}{arctan(\Theta/2)} & 0 & 0 \\
+        \frac{1}{tan(\Theta/2)} & 0 & 0 & 0 \\
+        0 & \frac{1}{tan(\Theta/2)} & 0 & 0 \\
         0 & 0 & 1 & -2d_n \\
         0 & 0 & 1 & 0 
     \end{bmatrix}
