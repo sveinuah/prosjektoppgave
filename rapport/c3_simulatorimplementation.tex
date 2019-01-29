@@ -1,16 +1,16 @@
 \section{System overview}
 
-This project will be set up as three main modules: Unreal Engine, AirSim, and the fisheye camera. These are all compilable on their own and do not need to be compiled in any specific order. Only Unreal Engine is executable on its own. AirSim is indirectly run by Unreal Engine through adding the plugin to a specific unreal project.
+This project will be set up as three main modules: Unreal Engine, AirSim, and the fisheye camera. These are all compilable on their own and do not need to be compiled in any specific order. Only Unreal Engine is executable on its own. AirSim is indirectly run by Unreal Engine through adding the plugin to a specific Unreal project.
 
 The AirSim plugin is made in a way so that it technically resides outside of Unreal Engine. However, it has full access to the resources of the Engine, through the engine's header files. Their design choice involves adding as much functionality as possible outside of the Engine, to make it easier to support other game engines with only small changes to the AirSim package. The added features in the AirSim package includes a Multirotor and car models, perspective and depth camera, LIDAR, IMU with magnetometer and GPS. In addition to this, it has support for hardware in the loop(HITL) through the PX4/Pixhawk flight controller and MAVlink. 
 
-As of now, AirSim is only usable with version 4.18 of Unreal Engine, while 4.21 is available at the time of writing. In order to reduce the chances of new commits to the original repositories causing problems for my project. Both AirSim and Unreal Engine 4.18 have been forked to a separate repository. This allows for full control over the updates made to the original repositories in addition to allowing custom modifications. The modifications to AirSim are available publicly. However, any changes to Unreal Engine must be kept private due to licensing.
+As of now, AirSim is only usable with version 4.18 of Unreal Engine, while 4.21 is available at the time of writing. In order to reduce the chances of new commits to the original repositories causing problems for my project. Both AirSim and Unreal Engine 4.18 have been forked to a separate repository. This allows for full control over the updates made to the original repositories in addition to allowing custom modifications. The modifications to AirSim and the fisheye module are available publicly as github repositories\footnote{https://github.com/sveinuah/AirSim}\footnote{https://github.com/sveinuah/prosjektoppgave}. However, any changes to Unreal Engine must be kept private due to licensing.
 
 \subsection{Communication pattern}
 
-Because of the design choices of AirSim, much of the simulator computations happen outside of Unreal Engine. While Unreal Engine handles the core game loop, resource management, and the graphical tasks, custom AirSim scripts handle sensor simulation and kinematics. Of course, AirSim also relies on Unreal Engine for camera data, actor positions and pose, in addition to timing data. The AirSim plugin implements a game mode which is run by Unreal Engine on simulation start. This decides whether to do a multirotor simulation, car simulation or computer vision mode. The computer vision mode turns off physics, enabling free camera movement for creating datasets. The game mode also sets up the program loop run for each actor each frame.
+While Unreal Engine handles the core game loop, resource management, and the graphical tasks, custom AirSim scripts handle sensor simulation and kinematics. Of course, AirSim also relies on Unreal Engine for camera data, actor positions and pose, in addition to timing data. The AirSim plugin implements a game mode which is run by Unreal Engine at the start of the simulation. This decides whether to do a multirotor simulation, car simulation or computer vision mode. The computer vision mode turns off physics, enabling free camera movement for creating datasets. The game mode also sets up the program loop run for each actor each frame.
 
-The API AirSim consists of a server/client based system, using the remote procedure call(RPC\footnote{https://github.com/rpclib/rpclib}) library. This enables messages to be sent as network packages(TCP/IP), in addition to allowing interfaces made for multiple programming languages. The server is written in C++, and the client side is implemented for both Python and C++. As long as the server is enabled in the configuration file, it is started by Unreal Engine during the startup routine for the simulation. 
+The AirSim API consists of a server/client based system, using a remote procedure call(RPC\footnote{https://github.com/rpclib/rpclib}) library. This enables messages to be sent as network packages(TCP/IP), in addition to allowing interfaces made for multiple programming languages. The server is written in C++, and the client side is implemented for both Python and C++. As long as the server is enabled in the configuration file, it is started by Unreal Engine during the startup routine for the simulation. 
 
 \begin{figure}[!htb]
     \centering
@@ -50,19 +50,19 @@ The API AirSim consists of a server/client based system, using the remote proced
     \label{fig:comm_pattern}
 \end{figure}
 
-The project will be implemented for the multirotor game mode. This means that it will not run on the other game modes. The reason for this is that the cameras need to be set up specifically for each game mode, through the Unreal Engine Blueprints imported by the game mode. The fisheye camera and ROS interface will depend on the C++ RPC client API, the perspective camera model and the image capture module for AirSim. The contribution of the project will be to combine perspective images into a single fisheye lens-distorted image, with as few changes as possible to the AirSim plugin. In addition to this, it will build upon the C++ API to allow for publishing images to ROS, through the normal ROS publisher interface. Figure~\ref{fig:comm_pattern} shows the main communication flow of Unreal Engine, AirSim, and the fisheye camera. As the project does not involve HITL with PX4, Mavlink or any controller setup, they are not shown in the figure, and will not be discussed any further in this report.
+The project will be implemented for the multirotor game mode. This means that it will not run on the other game modes. The reason for this is that the cameras need to be set up specifically for each game mode, through the Unreal Engine Blueprints. The fisheye camera and ROS interface will depend on the C++ RPC client API, the perspective camera model and the image capture module for AirSim. The contribution of the project will be to combine perspective images into a single fisheye lens-distorted image, with as few changes as possible to the AirSim plugin. In addition to this, it will build upon the C++ API to allow for publishing images to ROS, through the normal ROS publisher interface. Figure~\ref{fig:comm_pattern} shows the main communication flow of Unreal Engine, AirSim, and the fisheye camera. As the project does not involve HITL with PX4, Mavlink or any controller setup, they are not shown in the figure, and will not be discussed any further in this report.
 
 \section{Implementation}
 
 The goal of the implementation is to get a fisheye camera working and to publish the images to ROS. As only perspective cameras are available, and the fact that they are mounted to specific parts of the multirotor, it was not possible to implement this without making changes to AirSim. However, it was decided early on that no changes would be made to the source code of Unreal Engine. While some changes had to be made to the API in order to implement the ROS node, all of the old API is still functioning and usable.
 
-While most of this report describes angles in degrees, all of the implementations are done using radians. This decision was made to ensure correct scaling when calculating distortion, as well as for consistency in order to reduce human errors.
+Even though most of this report describes angles in degrees, all of the implementations are done using radians. This decision was made to ensure correct scaling when calculating distortion, as well as for consistency in order to reduce human errors.
 
 \subsection{Early development} \label{sec:Early_dev}
 
 As described in Section~\ref{sec:simulator_related}, Unreal Engine supports capturing of cube maps, which is a technique capturing the whole scene through rendering six $90^\circ$ FoV pictures. These are then stored in a special structure, with tooling for projecting it onto a sphere or to a plane using equireclinear projection. As the texture mapping tool for cube maps incorporate radial distortion, it was a natural starting point for simulating fisheye lenses. It is also used in \cite{UnrealCubeCapture}, where they describe using it in their omnidirectional video for their game.
 
-There are various tutorials of how to capture $360^\circ$ screenshots, and many of them are using the Nvidia Ansel plugin \cite{SceenshotsAnsel}. While this made omnidirectional images of the scene, there was no way of processing the images directly, except by saving them locally and loading the images through OpenCV or by similar means. While this is definitely possible, it would create unnecessary save and load cycles. In addition to this, the performance of saving and loading images from disk varies heavily from computer to computer.
+There are various tutorials of how to capture $360^\circ$ screenshots, as seen in \cite{SceenshotsAnsel}, using the Nvidia Ansel plugin. While this made omnidirectional images of the scene, there was no way of processing the images directly, except by saving them locally and loading the images through OpenCV or by similar means. While this is definitely possible, it would create unnecessary save and load cycles. This may make the performance unreliable, since the saving and loading time of images vary heavily from computer to computer.
 
 \begin{figure}[!htb]
     \centering
@@ -89,8 +89,6 @@ There are various tutorials of how to capture $360^\circ$ screenshots, and many 
 \end{figure}
 
 The second approach involved modifying the capture request and processing system in AirSim directly, to allow requests of both perspective images and cube maps through the existing API. Each camera actor in Unreal Engine needs a capture component and a render target in order to know what to capture and where to store the data. In AirSim's camera setup and API, only the 2D version shown in Figure~\ref{fig:capture_render_inherit} is implemented. Adding support for cube captures would therefore either mean to write alternative cube capture versions of most of the modules shown in Figure~\ref{fig:comm_pattern_camera_request}, or handle both through types through pointers to their parent class.
- 
-Figure~\ref{fig:comm_pattern_camera_request} shows a simplified data flow in an image request for a perspective image. The arrows represent header file inclusions, where low opacity refers to function calls during setup and dashed arrows represent structure includes. The modules are simplified and many of them encapsulate multiple source code files.
 
 \begin{figure}[!htb]
     \centering
@@ -147,31 +145,23 @@ Figure~\ref{fig:comm_pattern_camera_request} shows a simplified data flow in an 
     \caption{Simplified overview of dependencies in an AirSim image request. Dashed arrows (\protect\drawdashedarrow) represent structure includes and whole arrows (\protect\drawarrow)represent function includes, low opacity arrows (\protect\drawopacitydarrow) represent dependencies during setup.}
     \label{fig:comm_pattern_camera_request}
 \end{figure}
+Figure~\ref{fig:comm_pattern_camera_request} shows a simplified data flow in an image request for a perspective image. The arrows represent header file inclusions, where low opacity refers to function calls during setup and dashed arrows represent structure includes. The modules are simplified and many of them encapsulate multiple source code files.
 
 As writing alternative modules for AirSim to handle cube captures was deemed to be too large a task, the second option was chosen. Although this meant that more of the code was reusable, it quickly got out of hand. Since the respective child classes carry much of the implementation details for the capture modes, a lot of casting back and forth between types had to be implemented. This not only created code which was hard to read, but it also meant that much less of the original code was reusable than originally thought. Inexperience with advanced object-oriented C++ also created a huge time sink, using more time on fixing type-casting related problems than actual implementation.
 
 \subsection{Final implementation overview} \label{subsec:Fisheye_impl_overview}
 
-The final version of the fisheye camera is implemented as a client-side program, meaning that it is separated from both the AirSim plugin and Unreal Engine. This means that features of Unreal Engine that are not available through the AirSim API will no longer be available to the fisheye camera. As cube maps no longer are available, the fisheye image will have to be made by manually combining perspective images. Since there are no fisheye cameras with a vertical FoV greater than $270^\circ$, and the fact that the camera is mounted beneath the multirotor, the camera was implemented using a setup of 5 perspective cameras with a FoV of $90^\circ$. This can be extended to a full cube map, providing $360^\circ$ vertical FoV, by adding one extra camera to the multirotor model in Unreal Engine. The aspect ratio $\rho$ was also set to be $1$, matching that of normal cube maps. 
-In order to be able to get the correct images, the camera setup on the multirotor model had to be changed. As seen in Figure~\ref{fig:new_Blueprint_multirotor}, the 5 cameras are clustered below the multirotor at a $90^\circ$ offset from one another, with the main direction being downwards. As the number of cameras and their name reference is hardcoded into AirSim, some changes had to be made to the camera interface. This consisted of adding references to the new cameras for the link between AirSim and Unreal Engine and new API entries for the AirSim camera API.
+The final version of the fisheye camera is implemented as a client-side program, meaning that it is separated from both the AirSim plugin and Unreal Engine. This means that features of Unreal Engine that are not available through the AirSim API will no longer be available to the fisheye camera. As cube maps no longer are available, the fisheye image will have to be made by manually combining perspective images. Since there are no fisheye cameras with a vertical FoV greater than $270^\circ$, and the fact that the camera is mounted beneath the multirotor, the camera was implemented using a setup of 5 perspective cameras with a FoV of $90^\circ$. This can be extended to a full cube map, providing $360^\circ$ vertical FoV, by adding one extra camera to the multirotor model in Unreal Engine. The aspect ratio $\rho$ was also set to be $1$, matching that of normal cube maps.
 
 \begin{figure}[!htb]
     \centering
-    \begin{subfigure}{0.45\linewidth}
-        \centering
-        \includegraphics[height=4cm]{rapport/fig/Simulator/camera_setup.png}
-        \caption{Fisheye camera setup}
-        \label{fig:new_Blueprint_cameras}
-    \end{subfigure}
-    \begin{subfigure}{0.45\linewidth}
-        \centering
-        \includegraphics[height=4cm]{rapport/fig/Simulator/camera_setting.png}
-        \caption{Downward camera settings}
-        \label{fig:new_Blueprint_nodes}
-    \end{subfigure}
-    \caption{Multirotor Blueprint setup for the fisheye camera, consisting of 5 clustered perspective cameras.}
+    \includegraphics[height=7cm]{rapport/fig/Simulator/camera_setup.png}
+    \caption{Model setup for five perspective cameras attatched to the multirotor.}
     \label{fig:new_Blueprint_multirotor}
 \end{figure}
+In order to be able to get the correct images, the camera setup on the multirotor model had to be changed. As seen in Figure~\ref{fig:new_Blueprint_multirotor}, the 5 cameras are clustered below the multirotor at a $90^\circ$ offset from one another, with the main direction being downwards. As the number of cameras and their name reference is hardcoded into AirSim, some changes had to be made to the camera interface. This consisted of adding references to the new cameras for the link between AirSim and Unreal Engine and new API entries for the AirSim camera API.
+
+
 
 The following sections will present the modeling of the fisheye camera. The steps described are done on a pixel-wise level. As the same operation is done to every pixel in the source images, without any dependencies between them, this a highly parallelizable task, making it ideal for GPU acceleration.
 
@@ -189,11 +179,11 @@ The response form AirSim when requesting an image is an image response structure
     
     \coordinate (IMBOTC) at (0,0,-2);
     \tdplotsetrotatedcoordsorigin{(IMBOTC)}
-    \draw[tdplot_rotated_coords, thick, fill=black!8, opacity=1.0] (2,0,2) -- (2,0,-2) -- (-2,0,-2) -- (-2,0,2) -- cycle;
+    \draw[tdplot_rotated_coords, thick, fill=black!10, opacity=1.0] (2,0,2) -- (2,0,-2) -- (-2,0,-2) -- (-2,0,2) -- cycle;
     
     \coordinate (IMLEFT) at (0,-2,0);
     \tdplotsetrotatedcoordsorigin{(IMLEFT)}
-    \draw[tdplot_rotated_coords, thick, fill=black!8, opacity=1.0] (0,2,2) -- (0,-2,2) -- (0,-2,-2) -- (0,2,-2) -- cycle;
+    \draw[tdplot_rotated_coords, thick, fill=black!10, opacity=1.0] (0,2,2) -- (0,-2,2) -- (0,-2,-2) -- (0,2,-2) -- cycle;
     
     
     \tdplotsetrotatedcoordsorigin{(O)}
@@ -315,7 +305,7 @@ After rotating the image coordinate to the camera frame, the feature unit vector
 
 \subsection{Lens implementation} \label{sec:lens_modeling}
 
-The camera lens is implemented with the polynomial model presented in Table~11.1 in \cite{FisheyeCorke}. For now this is implemented as the fourth order polynomial in Equation~\eqref{eq:impl_lens_model}, where the parameters $k_1$-$k_4$ are tunable distortion parameters. $r(\phi)$ and $\theta$ refer to the polar coordinates of the fisheye image plane, defining the feature position in the fisheye image.
+The camera lens is implemented with the polynomial model presented in Table~\ref{tab:theory_fisheye_lens_model}. For now this is implemented as the fourth order polynomial in Equation~\eqref{eq:impl_lens_model}, where the parameters $k_1$-$k_4$ are tunable distortion parameters. $r(\phi)$ and $\theta$ refer to the polar coordinates of the fisheye image plane, defining the feature position in the fisheye image.
 
 \begin{align}
     \begin{aligned}[t]
@@ -325,7 +315,7 @@ The camera lens is implemented with the polynomial model presented in Table~11.1
     \label{eq:impl_lens_model}
 \end{align}
 
-The polynomial model is flexible and easy to implement, while able to simulate most effects caused by radial distortion. Unfortunately, as the model does not have any dependency on the longitude $\theta$, it is not able to simulate the effects of tangential distortion and this will have to be implemented in the future.
+The polynomial model is flexible and easy to implement, while able to simulate most effects caused by radial distortion. Unfortunately, as the model does not have any calibratable model for the longitude $\theta$, it is not able to simulate the effects of tangential distortion and this will have to be implemented in the future.
 
 In order to produce the final picture, the polar coordinates have to be transformed back to pixel coordinates for the new image. Again using $W$ as the width and $H$ as the height in pixels, the transformation can be found using Equation~\eqref{eq:pixel_transform}, as well as the relationship between polar and Cartesian coordinates shown in Equation~\eqref{eq:theory_equiangular_coords}. The resulting transformation is shown in Equation~\eqref{eq:impl_pixel_transform_final}.
 
@@ -349,7 +339,7 @@ In order to produce the final picture, the polar coordinates have to be transfor
     \label{eq:impl_pixel_transform_final}
 \end{equation}
 
-Assuming the the fisheye image will the whole square image, $y_{max} = x_{max}$ can be calculated to be calculated as shown in Equation~\eqref{eq:impl_size_xy_max}, with $\phi_{max}=\frac{\Theta}{2}=\frac{3 \pi}{2}$.
+Assuming the the fisheye image will span the whole square image, $y_{max} = x_{max}$ can be calculated to be calculated as shown in Equation~\eqref{eq:impl_size_xy_max}, with $\phi_{max}=\frac{\Theta}{2}=\frac{3 \pi}{4}$.
 
 \begin{equation}
     \begin{aligned}
@@ -392,7 +382,7 @@ If this is not the case, meaning that there is a mismatch between the size of th
 
 \subsection{ROS interface to AirSim and fisheye camera}\label{subsec:ROS_interface}
 
-The ROS node implementation is split into two different parts. The first part handles the core loop of the program, sending AirSim ImageRequests and handling the fisheye transformations, while the other handles ROS publishing. To be able to do this the ROS package inherits the base RPC-Client API class defined for AirSim, along with including the ROS header, to create a link between the two. However, for the added functionality of publishing fisheye images, it also depends on the fisheye module, OpenCV and cv\_bridge\footnote{https://github.com/ros-perception/vision\_opencv}, where cv\_bridge handles the conversion between the OpenCV image object and the ROS image message.
+The ROS node implementation is split into two different parts. The first part handles the core loop of the program, sending AirSim ImageRequests and handling the fisheye transformations, while the second handles ROS publishing. To be able to do this the ROS package inherits the base RPC-client API class defined for AirSim, along with including the ROS header, to create a link between the two. However, for the added functionality of publishing fisheye images, it also depends on the fisheye module, OpenCV and cv\_bridge\footnote{https://github.com/ros-perception/vision\_opencv}, where cv\_bridge handles the conversion between the OpenCV image object and the ROS image message.
 
 \begin{figure}[!htb]
     \centering
