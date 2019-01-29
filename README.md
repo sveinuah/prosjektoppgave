@@ -1,4 +1,4 @@
-# prosjektoppgave
+# Prosjektoppgave
 Prosjektoppgave på NTNU. 
 
 # Viktig!
